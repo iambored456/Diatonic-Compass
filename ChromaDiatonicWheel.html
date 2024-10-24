@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chroma-Diatonic Wheel</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f5f5f5;
+      margin: 0;
+    }
+    .wheel-container {
+      position: relative;
+      margin-top: 20px;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between; /* Align buttons side by side */
+      gap: 20px; /* Add space between the two control groups */
+    }
+    .control-group {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .control-group h3 {
+      margin: 5px 0;
+    }
+    .control-group button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 14px;
+    }
+    #result {
+      text-align: center;
+      font-size: 24px;
+      margin-top: 20px;
+      color: black; /* Ensure text color is visible */
+      position: relative; /* Prevent it from being hidden */
+      z-index: 1; /* Bring it above other elements */
+    }
+  </style>
+</head>
+<body>
+  <div class="wheel-container">
+    <!-- Increased canvas size by 50% (from 500x500 to 750x750) -->
+    <canvas id="chromaWheel" width="750" height="750"></canvas>
+    <div id="result">&nbsp;</div> <!-- Blank text space instead of removing the box -->
+    <div class="controls">
+      <div class="control-group">
+        <h3>Rotate Mode Degree</h3>
+        <button id="rotateWhiteLeft">Left</button>
+        <button id="rotateWhiteRight">Right</button>
+      </div>
+      <div class="control-group">
+        <h3>Rotate Pitch Name</h3>
+        <button id="rotateGreyLeft">Left</button>
+        <button id="rotateGreyRight">Right</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get canvas and context
+    const canvas = document.getElementById('chromaWheel');
+    const ctx = canvas.getContext('2d');
+
+    // Rotation angles
+    let greyRingRotation = 0;
+    let whiteRingRotation = 0;
+
+    // Center of the canvas
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    // Scale factor for increasing size
+    const scaleFactor = 1.5; // 50% increase
+
+    // Data arrays
+    const chromaticNotes = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
+    const diatonicIntervals = ['1', '♭2', '2', '♭3', '3', '4', '♯4/♭5', '5', '♯5/♭6', '6', '♭7', '7'];
+    const semitoneSteps = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+
+    window.onload = function() {
+      // Draw the wheel
+      drawWheel();
+
+      // Event listeners for rotation buttons
+      document.getElementById('rotateGreyLeft').addEventListener('click', () => {
+        greyRingRotation -= (2 * Math.PI) / 12;
+        drawWheel();
+      });
+
+      document.getElementById('rotateGreyRight').addEventListener('click', () => {
+        greyRingRotation += (2 * Math.PI) / 12;
+        drawWheel();
+      });
+
+      document.getElementById('rotateWhiteLeft').addEventListener('click', () => {
+        whiteRingRotation -= (2 * Math.PI) / 12;
+        drawWheel();
+      });
+
+      document.getElementById('rotateWhiteRight').addEventListener('click', () => {
+        whiteRingRotation += (2 * Math.PI) / 12;
+        drawWheel();
+      });
+    };
+
+    function drawWheel() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw outer grey ring first (background)
+      drawOuterRing();
+
+      // Draw middle white ring
+      drawMiddleRing();
+
+      // Draw inner black circle
+      drawInnerCircle();
+
+      // Draw red cursor/marker last so it's on top
+      drawRedMarker();
+
+      // Update result
+      updateResult();
+    }
+
+    function drawOuterRing() {
+      const baseRadius = 205 * scaleFactor; // Increased radius by 50%
+      const radius = baseRadius;
+      const angleStep = (2 * Math.PI) / chromaticNotes.length;
+
+      // Draw outer grey circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = '#cccccc';
+      ctx.fill();
+
+      // Adjust text radius to place text at the midpoint of the grey ring
+      const textRadius = radius - 24 * scaleFactor; // Center text between edges of grey ring
+
+      // Draw note labels
+      for (let i = 0; i < chromaticNotes.length; i++) {
+        const angle = i * angleStep - Math.PI / 2 + greyRingRotation;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+
+        // Keep text upright
+        ctx.rotate(-angle);
+
+        const x = Math.cos(angle) * textRadius;
+        const y = Math.sin(angle) * textRadius;
+
+        ctx.fillStyle = 'black'; // Text color is black
+        ctx.font = `${16 * scaleFactor}px Arial`; // Scale font size
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(chromaticNotes[i], x, y);
+
+        ctx.restore();
+      }
+    }
+
+    function drawMiddleRing() {
+      const baseRadius = 150 * scaleFactor; // Increased radius by 50%
+      const radius = baseRadius;
+      const angleStep = (2 * Math.PI) / diatonicIntervals.length;
+
+      // Draw middle white circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      // Adjust text radius to place text at the midpoint of the white ring
+      const textRadius = radius - 20.5 * scaleFactor; // Center text between edges of white ring
+
+      // Draw interval labels
+      for (let i = 0; i < diatonicIntervals.length; i++) {
+        const angle = i * angleStep - Math.PI / 2 + whiteRingRotation;
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+
+        // Keep text upright
+        ctx.rotate(-angle);
+
+        const x = Math.cos(angle) * textRadius;
+        const y = Math.sin(angle) * textRadius;
+
+        ctx.fillStyle = 'black';
+        ctx.font = `bold ${16 * scaleFactor}px Arial`; // Bold font for scale degrees
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(diatonicIntervals[i], x, y);
+
+        ctx.restore();
+      }
+    }
+
+    function drawInnerCircle() {
+      const baseRadius = 100 * scaleFactor; // Increased radius by 50%
+      const radius = baseRadius;
+
+      // Draw black circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = 'black';
+      ctx.fill();
+
+      const angleStep = (2 * Math.PI) / semitoneSteps.length;
+
+      // Adjust text radius to move labels inward
+      const textRadius = radius - 23 * scaleFactor; // Moved text slightly inward
+
+      // Draw semitone steps
+      for (let i = 0; i < semitoneSteps.length; i++) {
+        const angle = i * angleStep - Math.PI / 2; // Start at the top
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+
+        // Keep text upright
+        ctx.rotate(-angle);
+
+        const x = Math.cos(angle) * textRadius;
+        const y = Math.sin(angle) * textRadius;
+
+        ctx.fillStyle = 'white';
+        ctx.font = `${16 * scaleFactor}px Arial`; // Scale font size
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(semitoneSteps[i], x, y);
+
+        ctx.restore();
+      }
+    }
+
+    function drawRedMarker() {
+      const markerWidth = 50 * scaleFactor;
+      const markerStartY = -200 * scaleFactor; // Starting at the top of the outer ring
+      const markerHeight = 160 * scaleFactor;  // Height to cover down to the center
+
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 3 * scaleFactor;
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+
+      // Draw a single red rectangle covering the 12 o'clock position across all discs
+      ctx.beginPath();
+      ctx.rect(
+        -markerWidth / 2,
+        markerStartY,
+        markerWidth,
+        markerHeight
+      );
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function updateResult() {
+      const angleStep = (2 * Math.PI) / 12;
+
+      function getIndexAtTop(rotation) {
+        let index = Math.round(-rotation / angleStep) % 12;
+        if (index < 0) {
+          index += 12;
+        }
+        return index;
+      }
+
+      const pitchIndexAtTop = getIndexAtTop(greyRingRotation);
+      const degreeIndexAtTop = getIndexAtTop(whiteRingRotation);
+
+      const pitchAtTop = chromaticNotes[pitchIndexAtTop];
+      const degreeAtTop = diatonicIntervals[degreeIndexAtTop];
+
+      const modeMapping = {
+        '1': 'Major',
+        '2': 'Dorian',
+        '3': 'Phrygian',
+        '4': 'Lydian',
+        '5': 'Mixolydian',
+        '6': 'Minor',
+        '7': 'Locrian'
+      };
+
+      // Check if degreeAtTop is one of '1' to '7'
+      if (modeMapping.hasOwnProperty(degreeAtTop)) {
+        const modeName = modeMapping[degreeAtTop];
+        const pitchNames = pitchAtTop.split('/');
+        const modes = pitchNames.map(name => name.trim() + ' ' + modeName);
+        const resultText = modes.join(', ');
+        document.getElementById('result').textContent = resultText;
+      } else {
+        // Set the result to a blank space if no matching mode
+        document.getElementById('result').textContent = '\u00A0'; // Non-breaking space
+      }
+    }
+  </script>
+</body>
+</html>
