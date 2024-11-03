@@ -3,67 +3,303 @@
 <head>
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chroma-Diatonic Wheel</title>
+  <title>Diatonic Compass</title>
   <style>
+    /* Reset some default styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       display: flex;
       flex-direction: column;
       align-items: center;
       background-color: #f5f5f5;
       margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
     }
+
+    .title-container {
+      text-align: center;
+      padding: 2vh 0;
+      background-color: #ffffff;
+      width: 100%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .title-container h1 {
+      font-size: 3.5vmin;
+      margin-bottom: 0.5vh;
+      color: #333;
+    }
+
+    .title-container h2 {
+      font-size: 2vmin;
+      color: #666;
+    }
+
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2vh;
+      width: 100%;
+      flex: 1;
+      padding: 2vh 2vw;
+    }
+
+    .wheel-and-belts-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      /* Removed max-width to allow full width */
+    }
+
     .wheel-container {
       position: relative;
-      margin-top: 20px;
+      width: 90vw; /* Adjusted to 90% of viewport width */
+      max-width: 600px; /* Maximum width for larger screens */
+      aspect-ratio: 1 / 1;
+      margin-bottom: 2vh;
     }
+
     canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: #ffffff;
       border: 1px solid #ccc;
     }
-    .controls {
-      margin-top: 20px;
+
+    .belts-container {
+      width: 100%;
+      max-width: 600px; /* Ensure belts align with the compass */
       display: flex;
-      justify-content: space-between; /* Align buttons side by side */
-      gap: 20px; /* Add space between the two control groups */
+      flex-direction: column;
+      gap: 1vh;
     }
-    .control-group {
-      margin-bottom: 15px;
+
+    .belt-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .belt-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 1vw;
+    }
+
+    .belt-controls button {
+      margin: 0.3vh;
+      padding: 0.8vh 1.5vw;
+      font-size: 1.2vmin;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      background-color: #e0e0e0;
+    }
+
+    .belt-controls button:hover {
+      background-color: #ddd;
+    }
+
+    /* Invisible button for alignment */
+    .belt-controls.invisible {
+      visibility: hidden;
+    }
+
+    .belt {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      background-color: #e0e0e0;
+      border-radius: 5px;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+      height: 4vh;
+      padding-left: calc(100% / 12);
+      padding-right: calc(100% / 12);
+    }
+
+    .belt-cell {
+      flex: 1;
       text-align: center;
+      padding: 0.3vh 0;
+      font-size: 1vmin;
+      border-right: 1px solid #ccc;
+      background-color: #ffffff;
+      transition: background-color 0.3s, transform 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .control-group h3 {
-      margin: 5px 0;
+
+    .belt-cell:last-child {
+      border-right: none;
     }
-    .control-group button {
-      margin: 5px;
-      padding: 10px 20px;
-      font-size: 14px;
+
+    /* Color themes matching the wheel */
+    .pitch-belt .belt-cell {
+      background-color: #f0f8ff; /* Light blue */
     }
+
+    .degree-belt .belt-cell {
+      background-color: #fffacd; /* Lemon chiffon */
+    }
+
+    .chromatic-belt .belt-cell {
+      background-color: #ffe4e1; /* Misty rose */
+    }
+
+    /* Highlight centered cell */
+    .belt-cell.center {
+      background-color: #add8e6; /* Dodger blue */
+      font-weight: bold;
+      border: 2px solid #000;
+      transform: scale(1.1);
+    }
+
+    /* New style for scale degree highlights in Pitch Name Belt */
+    .belt-cell.scale-degree {
+      background-color: #b0e0e6; /* Powder Blue */
+    }
+
+    /* New style for scale degree highlights in Chromatic Belt */
+    .belt-cell.scale-degree-red {
+      background-color: #f08080; /* Light Coral */
+    }
+
+    /* New style for scale degree highlights in Mode Degree Belt */
+    .belt-cell.scale-degree-yellow {
+      background-color: #ffffe0; /* Light Yellow */
+    }
+
     #result {
       text-align: center;
-      font-size: 24px;
-      margin-top: 20px;
-      color: black; /* Ensure text color is visible */
-      position: relative; /* Prevent it from being hidden */
-      z-index: 1; /* Bring it above other elements */
+      font-size: 2vmin;
+      color: #333;
+      background-color: #ffffff;
+      padding: 1vh 2vw;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 600px;
+      min-height: 2.5em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .title-container h1 {
+        font-size: 4vmin;
+      }
+
+      .title-container h2 {
+        font-size: 2.2vmin;
+      }
+
+      .belt-controls button {
+        font-size: 1.4vmin;
+      }
+
+      #result {
+        font-size: 2.5vmin;
+      }
+
+      .belt-cell {
+        font-size: 1.2vmin;
+      }
+
+      .wheel-container {
+        width: 90vw;
+      }
+
+      .belts-container {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .title-container h1 {
+        font-size: 5vmin;
+      }
+
+      .title-container h2 {
+        font-size: 2.5vmin;
+      }
+
+      .belt-controls button {
+        font-size: 1.6vmin;
+      }
+
+      #result {
+        font-size: 3vmin;
+      }
+
+      .belt-cell {
+        font-size: 1.5vmin;
+      }
+
+      .wheel-container {
+        width: 90vw;
+      }
+
+      .belts-container {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="wheel-container">
-    <!-- Increased canvas size by 50% (from 500x500 to 750x750) -->
-    <canvas id="chromaWheel" width="750" height="750"></canvas>
-    <div id="result">&nbsp;</div> <!-- Blank text space instead of removing the box -->
-    <div class="controls">
-      <div class="control-group">
-        <h3>Rotate Mode Degree</h3>
-        <button id="rotateWhiteLeft">Left</button>
-        <button id="rotateWhiteRight">Right</button>
+  <div class="main-container">
+    <div class="wheel-and-belts-container">
+      <div class="wheel-container">
+        <canvas id="chromaWheel"></canvas>
       </div>
-      <div class="control-group">
-        <h3>Rotate Pitch Name</h3>
-        <button id="rotateGreyLeft">Left</button>
-        <button id="rotateGreyRight">Right</button>
+      <div class="belts-container">
+        <!-- Pitch Name Belt with Buttons -->
+        <div class="belt-row">
+          <div class="belt-controls">
+            <button id="rotateGreyLeft">Left</button>
+            <button id="rotateGreyRight">Right</button>
+          </div>
+          <div class="belt pitch-belt" id="pitchBelt"></div>
+        </div>
+        <!-- Mode Degree Belt with Buttons -->
+        <div class="belt-row">
+          <div class="belt-controls">
+            <button id="rotateWhiteLeft">Left</button>
+            <button id="rotateWhiteRight">Right</button>
+          </div>
+          <div class="belt degree-belt" id="degreeBelt"></div>
+        </div>
+        <!-- Chromatic Belt with Invisible Button -->
+        <div class="belt-row">
+          <div class="belt-controls invisible">
+            <button></button>
+            <button></button>
+          </div>
+          <div class="belt chromatic-belt" id="chromaticBelt"></div>
+        </div>
       </div>
     </div>
+    <div id="result">&nbsp;</div>
+  </div>
+    <div class="title-container">
+    <h1>Diatonic Compass</h1>
+    <h2>by Quinn Fleming</h2>
   </div>
 
   <script>
@@ -71,49 +307,81 @@
     const canvas = document.getElementById('chromaWheel');
     const ctx = canvas.getContext('2d');
 
+    // Set canvas dimensions to match CSS
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      drawWheel();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('load', resizeCanvas);
+
     // Rotation angles
-    let greyRingRotation = 0;
-    let whiteRingRotation = 0;
+    let greyRingRotation = 0; // Adjusted below after initial draw
+    let whiteRingRotation = 0; // Adjusted below after initial draw
 
     // Center of the canvas
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
+    let centerX = canvas.width / 2;
+    let centerY = canvas.height / 2;
 
-    // Scale factor for increasing size
-    const scaleFactor = 1.3
+    // Relative scale factor
+    let canvasSize = Math.min(canvas.width, canvas.height);
+    const textRadiusFactor = 0.03;
+    const fontSizeFactor = 0.038; // Increased font size factor for larger text
 
     // Data arrays
     const chromaticNotes = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
-    const diatonicIntervals = ['1', '#1/♭2', '2', '#2/♭3', '3', '4', '♯4/♭5', '5', '♯5/♭6', '6', '#6/♭7', '7'];
+    const diatonicIntervals = ['1', '#1/b2', '2', '#2/b3', '3', '4', '#4/b5', '5', '#5/b6', '6', '#6/b7', '7'];
     const semitoneSteps = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
 
+    // Map modes to their scale degrees (fixed positions)
+    const modeScaleDegrees = {
+      '1': [0, 2, 4, 5, 7, 9, 11],    // Major
+      '2': [0, 2, 3, 5, 7, 9, 10],    // Dorian
+      '3': [0, 1, 3, 5, 7, 8, 10],    // Phrygian
+      '4': [0, 2, 4, 6, 7, 9, 11],    // Lydian
+      '5': [0, 2, 4, 5, 7, 9, 10],    // Mixolydian
+      '6': [0, 2, 3, 5, 7, 8, 10],    // Minor (Aeolian)
+      '7': [0, 1, 3, 5, 6, 8, 10],    // Locrian
+    };
+
     window.onload = function() {
-      // Draw the wheel
-      drawWheel();
+      // Initialize rotation to align C/1/0 at center
+      greyRingRotation = 0; // Start with C at the top
+      whiteRingRotation = 0; // Start with 1 at the top
 
       // Event listeners for rotation buttons
       document.getElementById('rotateGreyLeft').addEventListener('click', () => {
-        greyRingRotation -= (2 * Math.PI) / 12;
-        drawWheel();
-      });
-
-      document.getElementById('rotateGreyRight').addEventListener('click', () => {
         greyRingRotation += (2 * Math.PI) / 12;
         drawWheel();
       });
 
+      document.getElementById('rotateGreyRight').addEventListener('click', () => {
+        greyRingRotation -= (2 * Math.PI) / 12;
+        drawWheel();
+      });
+
       document.getElementById('rotateWhiteLeft').addEventListener('click', () => {
-        whiteRingRotation -= (2 * Math.PI) / 12;
+        whiteRingRotation += (2 * Math.PI) / 12;
         drawWheel();
       });
 
       document.getElementById('rotateWhiteRight').addEventListener('click', () => {
-        whiteRingRotation += (2 * Math.PI) / 12;
+        whiteRingRotation -= (2 * Math.PI) / 12;
         drawWheel();
       });
+
+      // Initial draw
+      drawWheel();
     };
 
     function drawWheel() {
+      // Update center and size in case of resize
+      centerX = canvas.width / 2;
+      centerY = canvas.height / 2;
+      canvasSize = Math.min(canvas.width, canvas.height);
+      
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Draw outer grey ring first (background)
@@ -125,26 +393,93 @@
       // Draw inner black circle
       drawInnerCircle();
 
+      // Calculate scaleDegreeIndices
+      const degreeRotationIndex = getIndexAtTop(whiteRingRotation);
+      const degreeAtTop = diatonicIntervals[degreeRotationIndex];
+      const modeKey = degreeAtTop.replace('#', '').replace('b', '');
+      const scaleDegreeIndices = modeScaleDegrees[modeKey] || [];
+
+      // Draw dashed lines
+      drawDashedLines(scaleDegreeIndices);
+
+      // Draw labels
+      drawLabels();
+
       // Draw red cursor/marker last so it's on top
       drawRedMarker();
 
       // Update result
       updateResult();
+
+      // Update belts
+      updateBelts();
     }
 
     function drawOuterRing() {
-      const baseRadius = 205 * scaleFactor; // Increased radius by 50%
-      const radius = baseRadius;
-      const angleStep = (2 * Math.PI) / chromaticNotes.length;
+      const outerRadius = canvasSize * 0.5;
 
       // Draw outer grey circle
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
       ctx.fillStyle = '#cccccc';
       ctx.fill();
+    }
 
-      // Adjust text radius to place text at the midpoint of the grey ring
-      const textRadius = radius - 24 * scaleFactor; // Center text between edges of grey ring
+    function drawMiddleRing() {
+      const middleRadius = canvasSize * 0.35;
+
+      // Draw middle white circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, middleRadius, 0, 2 * Math.PI);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    }
+
+    function drawInnerCircle() {
+      const innerRadius = canvasSize * 0.2;
+
+      // Draw black circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+      ctx.fillStyle = 'black';
+      ctx.fill();
+    }
+
+    function drawDashedLines(scaleDegreeIndices) {
+      const outerRadius = canvasSize * 0.5;
+      const innerRadius = canvasSize * 0.2;
+      const angleStep = (2 * Math.PI) / 12;
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black
+      ctx.lineWidth = canvasSize * 0.002;
+      ctx.setLineDash([10, 5]); // Set dashed line
+
+      scaleDegreeIndices.forEach(index => {
+        const angle = index * angleStep - Math.PI / 2; // Removed greyRingRotation
+
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
+        ctx.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius);
+        ctx.stroke();
+      });
+
+      ctx.setLineDash([]); // Reset line dash
+      ctx.restore();
+    }
+
+    function drawLabels() {
+      drawOuterLabels();
+      drawMiddleLabels();
+      drawInnerLabels();
+    }
+
+    function drawOuterLabels() {
+      const outerRadius = canvasSize * 0.5;
+      const angleStep = (2 * Math.PI) / chromaticNotes.length;
+      const textRadius = outerRadius * 0.85;
+      const fontSize = canvasSize * fontSizeFactor;
 
       // Draw note labels
       for (let i = 0; i < chromaticNotes.length; i++) {
@@ -153,15 +488,13 @@
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(angle);
-
-        // Keep text upright
         ctx.rotate(-angle);
 
         const x = Math.cos(angle) * textRadius;
         const y = Math.sin(angle) * textRadius;
 
-        ctx.fillStyle = 'black'; // Text color is black
-        ctx.font = `${16 * scaleFactor}px Arial`; // Scale font size
+        ctx.fillStyle = 'black';
+        ctx.font = `${fontSize}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(chromaticNotes[i], x, y);
@@ -170,19 +503,11 @@
       }
     }
 
-    function drawMiddleRing() {
-      const baseRadius = 150 * scaleFactor; // Increased radius by 50%
-      const radius = baseRadius;
+    function drawMiddleLabels() {
+      const middleRadius = canvasSize * 0.35;
       const angleStep = (2 * Math.PI) / diatonicIntervals.length;
-
-      // Draw middle white circle
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-
-      // Adjust text radius to place text at the midpoint of the white ring
-      const textRadius = radius - 20.5 * scaleFactor; // Center text between edges of white ring
+      const textRadius = middleRadius * 0.80;
+      const fontSize = canvasSize * fontSizeFactor;
 
       // Draw interval labels
       for (let i = 0; i < diatonicIntervals.length; i++) {
@@ -191,15 +516,13 @@
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(angle);
-
-        // Keep text upright
         ctx.rotate(-angle);
 
         const x = Math.cos(angle) * textRadius;
         const y = Math.sin(angle) * textRadius;
 
         ctx.fillStyle = 'black';
-        ctx.font = `bold ${16 * scaleFactor}px Arial`; // Bold font for scale degrees
+        ctx.font = `bold ${fontSize}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(diatonicIntervals[i], x, y);
@@ -208,37 +531,26 @@
       }
     }
 
-    function drawInnerCircle() {
-      const baseRadius = 100 * scaleFactor; // Increased radius by 50%
-      const radius = baseRadius;
-
-      // Draw black circle
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-      ctx.fillStyle = 'black';
-      ctx.fill();
-
+    function drawInnerLabels() {
+      const innerRadius = canvasSize * 0.2;
+      const textRadius = innerRadius * 0.8;
+      const fontSize = canvasSize * 0.025;
       const angleStep = (2 * Math.PI) / semitoneSteps.length;
-
-      // Adjust text radius to move labels inward
-      const textRadius = radius - 23 * scaleFactor; // Moved text slightly inward
 
       // Draw semitone steps
       for (let i = 0; i < semitoneSteps.length; i++) {
-        const angle = i * angleStep - Math.PI / 2; // Start at the top
+        const angle = i * angleStep - Math.PI / 2;
 
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(angle);
-
-        // Keep text upright
         ctx.rotate(-angle);
 
         const x = Math.cos(angle) * textRadius;
         const y = Math.sin(angle) * textRadius;
 
         ctx.fillStyle = 'white';
-        ctx.font = `${16 * scaleFactor}px Arial`; // Scale font size
+        ctx.font = `${fontSize}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(semitoneSteps[i], x, y);
@@ -248,12 +560,12 @@
     }
 
     function drawRedMarker() {
-      const markerWidth = 50 * scaleFactor;
-      const markerStartY = -200 * scaleFactor; // Starting at the top of the outer ring
-      const markerHeight = 160 * scaleFactor;  // Height to cover down to the center
+      const markerWidth = canvasSize * 0.070;
+      const markerStartY = -canvasSize * 0.5;
+      const markerHeight = canvasSize * 0.38; // Increased height to reach inner circle
 
       ctx.strokeStyle = 'red';
-      ctx.lineWidth = 3 * scaleFactor;
+      ctx.lineWidth = canvasSize * 0.005;
 
       ctx.save();
       ctx.translate(centerX, centerY);
@@ -290,26 +602,113 @@
 
       const modeMapping = {
         '1': 'Major',
+        '#1/b2': '',
         '2': 'Dorian',
-        '3': 'Phrygian',
+        '#2/b3': '',
+        '3': 'Phrygian', 
         '4': 'Lydian',
+        '#4/b5': '',
         '5': 'Mixolydian',
-        '6': 'Minor',
+        '#5/b6': '',
+        '6': 'Minor', 
+        '#6/b7': '',
         '7': 'Locrian'
       };
 
-      // Check if degreeAtTop is one of '1' to '7'
-      if (modeMapping.hasOwnProperty(degreeAtTop)) {
-        const modeName = modeMapping[degreeAtTop];
-        const pitchNames = pitchAtTop.split('/');
-        const modes = pitchNames.map(name => name.trim() + ' ' + modeName);
-        const resultText = modes.join(', ');
-        document.getElementById('result').textContent = resultText;
-      } else {
-        // Set the result to a blank space if no matching mode
-        document.getElementById('result').textContent = '\u00A0'; // Non-breaking space
-      }
+      // Get the mode name; if empty, skip it
+      const modeName = modeMapping[degreeAtTop];
+
+      const pitchNames = pitchAtTop.split('/');
+      let modes = [];
+      pitchNames.forEach(name => {
+        if (modeName) {
+          modes.push(name.trim() + ' ' + modeName);
+        } else {
+          modes.push(name.trim());
+        }
+      });
+      const resultText = modes.join(', ');
+      document.getElementById('result').textContent = resultText;
     }
+
+    // Function to create belt cells
+    function createBelt(containerId, items, centerIndex, scaleDegreeIndices = [], highlightClass = 'scale-degree') {
+      const container = document.getElementById(containerId);
+      container.innerHTML = ''; // Clear existing cells
+
+      items.forEach((item, index) => {
+        const cell = document.createElement('div');
+        cell.classList.add('belt-cell');
+        cell.textContent = item;
+
+        // Highlight the center cell
+        if (index === centerIndex) {
+          cell.classList.add('center');
+        }
+
+        // Highlight the scale degree cells
+        if (scaleDegreeIndices.includes(index)) {
+          cell.classList.add(highlightClass);
+        }
+
+        container.appendChild(cell);
+      });
+    }
+
+    // Function to update belts based on rotation
+    function updateBelts() {
+      const totalCells = chromaticNotes.length; // 12
+
+      // Scale Degree Belt
+      const degreeCenterIndex = 0; // Highlight the leftmost cell (first cell)
+      const degreeRotationIndex = getIndexAtTop(whiteRingRotation);
+      const rotatedDegree = rotateArray(diatonicIntervals, degreeRotationIndex);
+
+      // Get the scale degrees to highlight based on the selected mode
+      const degreeAtTop = diatonicIntervals[degreeRotationIndex];
+      const modeKey = degreeAtTop.replace('#', '').replace('b', '');
+      const scaleDegreeIndices = modeScaleDegrees[modeKey] || [];
+
+      // Adjust indices for Mode Degree belt
+      const adjustedScaleDegreeIndices = scaleDegreeIndices.map(index => (index - degreeRotationIndex + 12) % 12);
+
+      // Create Mode Degree belt with highlighting
+      createBelt('degreeBelt', rotatedDegree, degreeCenterIndex, adjustedScaleDegreeIndices, 'scale-degree-yellow');
+
+      // Pitch Name Belt
+      const pitchCenterIndex = 0; // Highlight the leftmost cell (first cell)
+      const pitchRotationIndex = getIndexAtTop(greyRingRotation);
+      const rotatedPitch = rotateArray(chromaticNotes, pitchRotationIndex);
+      createBelt('pitchBelt', rotatedPitch, pitchCenterIndex, scaleDegreeIndices);
+
+      // Chromatic Belt (Does not rotate)
+      const chromaticCenterIndex = 0; // Highlight the leftmost cell (first cell)
+      createBelt('chromaticBelt', semitoneSteps, chromaticCenterIndex, scaleDegreeIndices, 'scale-degree-red');
+    }
+
+    // Helper function to rotate an array based on rotation index
+    function rotateArray(array, rotationIndex) {
+      return array.slice(rotationIndex).concat(array.slice(0, rotationIndex));
+    }
+
+    // Helper function to determine the current index at top
+    function getIndexAtTop(rotation) {
+      const angleStep = (2 * Math.PI) / 12;
+      let index = Math.round(-rotation / angleStep) % 12;
+      if (index < 0) {
+        index += 12;
+      }
+      return index;
+    }
+
+    // Initialize belts on window load and resize
+    window.addEventListener('load', () => {
+      drawWheel();
+    });
+
+    window.addEventListener('resize', () => {
+      drawWheel();
+    });
   </script>
 </body>
 </html>
