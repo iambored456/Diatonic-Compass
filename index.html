@@ -56,13 +56,12 @@
       flex-direction: column;
       align-items: center;
       width: 100%;
-      /* Removed max-width to allow full width */
     }
 
     .wheel-container {
       position: relative;
-      width: 90vw; /* Adjusted to 90% of viewport width */
-      max-width: 600px; /* Maximum width for larger screens */
+      width: 90vw;
+      max-width: 600px;
       aspect-ratio: 1 / 1;
       margin-bottom: 2vh;
     }
@@ -80,7 +79,7 @@
 
     .belts-container {
       width: 100%;
-      max-width: 600px; /* Ensure belts align with the compass */
+      max-width: 600px;
       display: flex;
       flex-direction: column;
       gap: 1vh;
@@ -148,40 +147,35 @@
       border-right: none;
     }
 
-    /* Color themes matching the wheel */
     .pitch-belt .belt-cell {
-      background-color: #f0f8ff; /* Light blue */
+      background-color: #f0f8ff;
     }
 
     .degree-belt .belt-cell {
-      background-color: #fffacd; /* Lemon chiffon */
+      background-color: #fffacd;
     }
 
     .chromatic-belt .belt-cell {
-      background-color: #ffe4e1; /* Misty rose */
+      background-color: #ffe4e1;
     }
 
-    /* Highlight centered cell */
     .belt-cell.center {
-      background-color: #add8e6; /* Dodger blue */
+      background-color: #add8e6;
       font-weight: bold;
       border: 2px solid #000;
       transform: scale(1.1);
     }
 
-    /* New style for scale degree highlights in Pitch Name Belt */
     .belt-cell.scale-degree {
-      background-color: #b0e0e6; /* Powder Blue */
+      background-color: #b0e0e6;
     }
 
-    /* New style for scale degree highlights in Chromatic Belt */
     .belt-cell.scale-degree-red {
-      background-color: #f08080; /* Light Coral */
+      background-color: #f08080;
     }
 
-    /* New style for scale degree highlights in Mode Degree Belt */
     .belt-cell.scale-degree-yellow {
-      background-color: #ffffe0; /* Light Yellow */
+      background-color: #ffffe0;
     }
 
     #result {
@@ -199,67 +193,6 @@
       align-items: center;
       justify-content: center;
     }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      .title-container h1 {
-        font-size: 4vmin;
-      }
-
-      .title-container h2 {
-        font-size: 2.2vmin;
-      }
-
-      .belt-controls button {
-        font-size: 1.4vmin;
-      }
-
-      #result {
-        font-size: 2.5vmin;
-      }
-
-      .belt-cell {
-        font-size: 1.2vmin;
-      }
-
-      .wheel-container {
-        width: 90vw;
-      }
-
-      .belts-container {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .title-container h1 {
-        font-size: 5vmin;
-      }
-
-      .title-container h2 {
-        font-size: 2.5vmin;
-      }
-
-      .belt-controls button {
-        font-size: 1.6vmin;
-      }
-
-      #result {
-        font-size: 3vmin;
-      }
-
-      .belt-cell {
-        font-size: 1.5vmin;
-      }
-
-      .wheel-container {
-        width: 90vw;
-      }
-
-      .belts-container {
-        width: 100%;
-      }
-    }
   </style>
 </head>
 <body>
@@ -269,22 +202,26 @@
         <canvas id="chromaWheel"></canvas>
       </div>
       <div class="belts-container">
-        <!-- Pitch Name Belt with Buttons -->
+        <!-- Pitch Name Belt with Buttons and Label -->
         <div class="belt-row">
           <div class="belt-controls">
-            <button id="rotateGreyLeft">Left</button>
-            <button id="rotateGreyRight">Right</button>
+            <label>Pitch Name</label> <!-- Added label for Pitch Name -->
+            <button id="rotateGreyRight">Left</button> <!-- Switched directions -->
+            <button id="rotateGreyLeft">Right</button> <!-- Switched directions -->
           </div>
           <div class="belt pitch-belt" id="pitchBelt"></div>
         </div>
-        <!-- Mode Degree Belt with Buttons -->
+
+        <!-- Mode Degree Belt with Buttons and Label -->
         <div class="belt-row">
           <div class="belt-controls">
-            <button id="rotateWhiteLeft">Left</button>
-            <button id="rotateWhiteRight">Right</button>
+            <label>Scale Degree</label> <!-- Added label for Scale Degree -->
+            <button id="rotateWhiteRight">Left</button> <!-- Switched directions -->
+            <button id="rotateWhiteLeft">Right</button> <!-- Switched directions -->
           </div>
           <div class="belt degree-belt" id="degreeBelt"></div>
         </div>
+
         <!-- Chromatic Belt with Invisible Button -->
         <div class="belt-row">
           <div class="belt-controls invisible">
@@ -297,9 +234,8 @@
     </div>
     <div id="result">&nbsp;</div>
   </div>
-    <div class="title-container">
-    <h1>Diatonic Compass</h1>
-    <h2>by Quinn Fleming</h2>
+  <div class="title-container">
+    <h2>Diatonic Compass by Quinn Fleming</h2>
   </div>
 
   <script>
@@ -318,24 +254,22 @@
     window.addEventListener('load', resizeCanvas);
 
     // Rotation angles
-    let greyRingRotation = 0; // Adjusted below after initial draw
-    let whiteRingRotation = 0; // Adjusted below after initial draw
+    let greyRingRotation = 0;
+    let whiteRingRotation = 0;
+    let greyRingTargetRotation = 0;
+    let whiteRingTargetRotation = 0;
+    let greyRingAnimating = false;
+    let whiteRingAnimating = false;
 
-    // Center of the canvas
     let centerX = canvas.width / 2;
     let centerY = canvas.height / 2;
-
-    // Relative scale factor
     let canvasSize = Math.min(canvas.width, canvas.height);
-    const textRadiusFactor = 0.03;
-    const fontSizeFactor = 0.038; // Increased font size factor for larger text
+    const fontSizeFactor = 0.038;
 
-    // Data arrays
     const chromaticNotes = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
     const diatonicIntervals = ['1', '#1/b2', '2', '#2/b3', '3', '4', '#4/b5', '5', '#5/b6', '6', '#6/b7', '7'];
     const semitoneSteps = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
 
-    // Map modes to their scale degrees (fixed positions)
     const modeScaleDegrees = {
       '1': [0, 2, 4, 5, 7, 9, 11],    // Major
       '2': [0, 2, 3, 5, 7, 9, 10],    // Dorian
@@ -350,26 +284,28 @@
       // Initialize rotation to align C/1/0 at center
       greyRingRotation = 0; // Start with C at the top
       whiteRingRotation = 0; // Start with 1 at the top
+      greyRingTargetRotation = greyRingRotation;
+      whiteRingTargetRotation = whiteRingRotation;
 
       // Event listeners for rotation buttons
       document.getElementById('rotateGreyLeft').addEventListener('click', () => {
-        greyRingRotation += (2 * Math.PI) / 12;
-        drawWheel();
+        greyRingTargetRotation += (2 * Math.PI) / 12;
+        animateGreyRing();
       });
 
       document.getElementById('rotateGreyRight').addEventListener('click', () => {
-        greyRingRotation -= (2 * Math.PI) / 12;
-        drawWheel();
+        greyRingTargetRotation -= (2 * Math.PI) / 12;
+        animateGreyRing();
       });
 
       document.getElementById('rotateWhiteLeft').addEventListener('click', () => {
-        whiteRingRotation += (2 * Math.PI) / 12;
-        drawWheel();
+        whiteRingTargetRotation += (2 * Math.PI) / 12;
+        animateWhiteRing();
       });
 
       document.getElementById('rotateWhiteRight').addEventListener('click', () => {
-        whiteRingRotation -= (2 * Math.PI) / 12;
-        drawWheel();
+        whiteRingTargetRotation -= (2 * Math.PI) / 12;
+        animateWhiteRing();
       });
 
       // Initial draw
@@ -457,7 +393,7 @@
       ctx.setLineDash([10, 5]); // Set dashed line
 
       scaleDegreeIndices.forEach(index => {
-        const angle = index * angleStep - Math.PI / 2; // Removed greyRingRotation
+        const angle = index * angleStep - Math.PI / 2; // Fixed position
 
         ctx.beginPath();
         ctx.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
@@ -631,7 +567,68 @@
       document.getElementById('result').textContent = resultText;
     }
 
-    // Function to create belt cells
+    // Easing function for smoother animation
+    function easeInOutQuad(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    // Function to animate the grey ring rotation
+    function animateGreyRing() {
+      if (greyRingAnimating) return;
+      greyRingAnimating = true;
+
+      const startRotation = greyRingRotation;
+      const endRotation = greyRingTargetRotation;
+      const duration = 300; // Animation duration in milliseconds
+      const startTime = performance.now();
+
+      function animate(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        greyRingRotation = startRotation + (endRotation - startRotation) * easeInOutQuad(progress);
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          greyRingRotation = endRotation;
+          greyRingAnimating = false;
+          drawWheel();
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Function to animate the white ring rotation
+    function animateWhiteRing() {
+      if (whiteRingAnimating) return;
+      whiteRingAnimating = true;
+
+      const startRotation = whiteRingRotation;
+      const endRotation = whiteRingTargetRotation;
+      const duration = 300; // Animation duration in milliseconds
+      const startTime = performance.now();
+
+      function animate(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        whiteRingRotation = startRotation + (endRotation - startRotation) * easeInOutQuad(progress);
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          whiteRingRotation = endRotation;
+          whiteRingAnimating = false;
+          drawWheel();
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Function to create belt cells (without sliding animations)
     function createBelt(containerId, items, centerIndex, scaleDegreeIndices = [], highlightClass = 'scale-degree') {
       const container = document.getElementById(containerId);
       container.innerHTML = ''; // Clear existing cells
@@ -657,8 +654,6 @@
 
     // Function to update belts based on rotation
     function updateBelts() {
-      const totalCells = chromaticNotes.length; // 12
-
       // Scale Degree Belt
       const degreeCenterIndex = 0; // Highlight the leftmost cell (first cell)
       const degreeRotationIndex = getIndexAtTop(whiteRingRotation);
