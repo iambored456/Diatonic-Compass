@@ -97,34 +97,59 @@ const modeMapping = {
 // ===== DRAW THE ENTIRE WHEEL =====
 // Add new function
 function drawMiddleRingBackground(ctx, centerX, centerY, canvasSize) {
-    const middleRadius = canvasSize * 0.35;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, middleRadius, 0, 2 * Math.PI);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-  }
+  const middleRadius = canvasSize * 0.35;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, middleRadius, 0, 2 * Math.PI);
+  ctx.fillStyle = '#e0e0e0'; // Changed from 'white' to light gray
+  ctx.fill();
+}
   
   // Update drawWheel function to include new layer
   function drawWheel(ctx, canvas, centerX, centerY, canvasSize, whiteRingRotation, scaleDegreeIndices, greyRingRotation) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      drawOuterRing(ctx, centerX, centerY, canvasSize);
-      drawMiddleRingBackground(ctx, centerX, centerY, canvasSize); // Add this line
-      drawColoredWhiteRingSegments(ctx, centerX, centerY, canvasSize, whiteRingRotation);
-      drawInnerCircle(ctx, centerX, centerY, canvasSize);
-      
-      drawDashedLines(ctx, centerX, centerY, canvasSize, whiteRingRotation);
-      drawLabels(ctx, centerX, centerY, canvasSize, whiteRingRotation, greyRingRotation);
-      drawRedMarker(ctx, centerX, centerY, canvasSize);
-  }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Layer 1: Outer ring with black/white wedges
+    drawOuterRing(ctx, centerX, centerY, canvasSize, greyRingRotation);
+    // Layer 2: Middle ring background (white)
+    drawMiddleRingBackground(ctx, centerX, centerY, canvasSize);
+    // Layer 3: Colored segments for diatonic positions
+    drawColoredWhiteRingSegments(ctx, centerX, centerY, canvasSize, whiteRingRotation);
+    // Layer 4: Inner black circle
+    drawInnerCircle(ctx, centerX, centerY, canvasSize);
+    // Layer 5: All text labels
+    drawLabels(ctx, centerX, centerY, canvasSize, whiteRingRotation, greyRingRotation);
+    // Layer 6: Dashed lines (moved to appear on top)
+    drawDashedLines(ctx, centerX, centerY, canvasSize, whiteRingRotation);
+    // Layer 7: Red marker
+    drawRedMarker(ctx, centerX, centerY, canvasSize);
+}
 
 // ===== DRAW OUTER RING =====
-function drawOuterRing(ctx, centerX, centerY, canvasSize) {
+function drawOuterRing(ctx, centerX, centerY, canvasSize, greyRingRotation) {
   const outerRadius = canvasSize * 0.5;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
-  ctx.fillStyle = '#cccccc';
-  ctx.fill();
+  const middleRadius = canvasSize * 0.35;
+  
+  // Draw each wedge
+  for (let i = 0; i < chromaticNotes.length; i++) {
+      const centerAngle = i * angleStep + greyRingRotation - Math.PI / 2;
+      const startAngle = centerAngle - angleStep / 2;
+      const endAngle = centerAngle + angleStep / 2;
+      
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+      ctx.closePath();
+      
+      const note = chromaticNotes[i];
+      // Fill wedge
+      ctx.fillStyle = pianoKeyColors[note] ? '#ffffff' : '#000000';
+      ctx.fill();
+      
+      // Add grey border
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = canvasSize * 0.001;
+      ctx.stroke();
+  }
 }
 
 // ===== DRAW MIDDLE RING IN WEDGES, CENTERED ON LABEL =====
@@ -165,8 +190,8 @@ function drawDashedLines(ctx, centerX, centerY, canvasSize, whiteRingRotation) {
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(whiteRingRotation); // Rotate dashed lines with the white ring
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.lineWidth = canvasSize * 0.002;
+    ctx.strokeStyle = 'hsla(60, 100.00%, 50.00%, 0.00)'; // TRANSPARENCY SET TO ZERO FOR NOW ******
+    ctx.lineWidth = canvasSize * 0.003;
     ctx.setLineDash([10, 5]);
   
     diatonicDegreeIndices.forEach(index => {
@@ -189,28 +214,30 @@ function drawLabels(ctx, centerX, centerY, canvasSize, whiteRingRotation, greyRi
 }
 
 function drawOuterLabels(ctx, centerX, centerY, canvasSize, greyRingRotation) {
-  const outerRadius = canvasSize * 0.5;
-  const textRadius = outerRadius * 0.85;
-  const fontSize = canvasSize * fontSizeFactor;
+    const outerRadius = canvasSize * 0.5;
+    const textRadius = outerRadius * 0.85;
+    const fontSize = canvasSize * fontSizeFactor;
 
-  for (let i = 0; i < chromaticNotes.length; i++) {
-    const angle = i * angleStep - Math.PI / 2 + greyRingRotation;
+    for (let i = 0; i < chromaticNotes.length; i++) {
+        const angle = i * angleStep - Math.PI / 2 + greyRingRotation;
+        const note = chromaticNotes[i];
 
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate(angle);
-    ctx.rotate(-angle);
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+        ctx.rotate(-angle);
 
-    const x = Math.cos(angle) * textRadius;
-    const y = Math.sin(angle) * textRadius;
+        const x = Math.cos(angle) * textRadius;
+        const y = Math.sin(angle) * textRadius;
 
-    ctx.fillStyle = 'black';
-    ctx.font = `${fontSize}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(chromaticNotes[i], x, y);
-    ctx.restore();
-  }
+        // Invert text color based on background
+        ctx.fillStyle = pianoKeyColors[note] ? '#000000' : '#ffffff';
+        ctx.font = `${fontSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(note, x, y);
+        ctx.restore();
+    }
 }
 
 function drawMiddleLabels(ctx, centerX, centerY, canvasSize, whiteRingRotation) {
