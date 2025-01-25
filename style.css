@@ -37,12 +37,30 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2vh;
+    gap: 1vh;
     width: 100%;
     flex: 1;
-    padding: 2vh 2vw;
+    padding: 1vh 2vw;
   }
   
+  #result {
+    text-align: center;
+    font-size: 2.2vmin;
+    color: #333;
+    background-color: #ffffff;
+    padding: 0.75vh 2vw;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    width: 50%;
+    max-width: 800px;
+    min-height: 2.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1vh;
+    margin-top: 1vh;
+  }
+
   .wheel-and-belts-container {
     display: flex;
     flex-direction: column;
@@ -55,7 +73,7 @@
     width: 90vw;
     max-width: 600px;
     aspect-ratio: 1 / 1;
-    margin-bottom: 2vh;
+    margin-bottom: 1vh;
   }
   
   canvas {
@@ -71,36 +89,49 @@
   
   .belts-container {
     width: 100%;
-    max-width: 600px;
+    max-width: 800px; /* Increased from 600px */
     display: flex;
     flex-direction: column;
-    gap: 1vh;
+    gap: 0.75vh;
   }
   
   .belt-row {
     display: flex;
     align-items: center;
     width: 100%;
+    margin-bottom: 0.5vh;
   }
   
   .belt-controls {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    margin-right: 1vw;
+    align-items: flex-start;
+    min-width: 150px;
+    gap: 0.5vh;
+  }
+  
+  .belt-controls label {
+    margin-right: auto; /* Push label to left */
+    white-space: nowrap;
   }
   
   .belt-controls button {
-    margin: 0.3vh;
-    padding: 0.8vh 1.5vw;
-    font-size: 1.2vmin;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    background-color: #e0e0e0;
+    margin: 0 0.3vh; /* Adjust horizontal margins */
   }
   
+  .button-group {
+    display: flex;
+    gap: 0.5vh;
+  }
+  
+  .button-group.invisible {
+    visibility: hidden;
+  }
+  
+  .belt {
+    flex: 1;
+  }
+
   .belt-controls button:hover {
     background-color: #ddd;
   }
@@ -116,7 +147,7 @@
     background-color: #e0e0e0;
     border-radius: 5px;
     box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-    height: 4vh;
+    height: 6vh; /* Increased from 4vh */
     padding-left: calc(100% / 12);
     padding-right: calc(100% / 12);
   }
@@ -124,14 +155,21 @@
   .belt-cell {
     flex: 1;
     text-align: center;
-    padding: 0.3vh 0;
-    font-size: 1vmin;
+    padding: 0.5vh 0; /* Increased from 0.3vh */
+    font-size: 1.4vmin; /* Increased from 1vmin */
     border-right: 1px solid #ccc;
     background-color: #ffffff;
     transition: background-color 0.3s, transform 0.3s;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  
+  .belt-stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5vh; /* Reduced from 5px */
   }
   
   .belt-cell:last-child {
@@ -143,8 +181,12 @@
   }
   
   .degree-belt .belt-cell {
-    background-color: #fffacd;
-  }
+    background-color: #fffdf0; /* Very pale yellow */
+}
+
+.degree-belt .belt-cell.scale-degree-yellow {
+    background-color: #ffeb3b; /* Vivid yellow */
+}
   
   .chromatic-belt .belt-cell {
     background-color: #ffe4e1;
@@ -169,21 +211,23 @@
     background-color: #ffffe0;
   }
   
-  #result {
-    text-align: center;
-    font-size: 2vmin;
-    color: #333;
-    background-color: #ffffff;
-    padding: 1vh 2vw;
-    border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 600px;
-    min-height: 2.5em;
+  .belt-stack {
+    flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
   }
+  
+  .belt-stack .belt {
+    margin: 0;
+  }
+
+
+
+
+
+
+
 
 /* ================================
    NAVIGATION BAR STYLES
@@ -243,8 +287,4 @@ nav {
   /* background-color: #555; */
   /* color: #ff0; */
 }
-/* Optional: Smooth transition for active state */
-.nav-container ul li a.active,
-.nav-container ul li a:hover {
-  transition: text-decoration 0.3s, color 0.3s;
-}
+
