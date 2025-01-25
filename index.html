@@ -9,65 +9,72 @@
 </head>
 <body>
 
-<!-- Navigation Bar -->
-<nav>
-  <div class="nav-container">
-    <!-- Left-aligned brand (two lines) -->
-    <div class="brand">
-      <p class="small-text">Quinn Fleming's</p>
-      <h1>Music Learning Tools</h1>
+  <!-- Navigation Bar -->
+  <nav>
+    <div class="nav-container">
+      <!-- Left-aligned brand (two lines) -->
+      <div class="brand">
+        <p class="small-text">Quinn Fleming's</p>
+        <h1>Music Learning Tools</h1>
+      </div>
+      <!-- Centered links -->
+      <ul>
+        <li><a href="https://iambored456.github.io/DiatonicCompass/" class="active">DiatonicCompass</a></li>
+        <li><a href="https://iambored456.github.io/Student-Notation/">Student-Notation</a></li>
+        <li><a href="https://iambored456.github.io/PitchDetect/">PitchDetect</a></li>
+      </ul>
     </div>
-
-    <!-- Centered links -->
-    <ul>
-      <li><a href="https://iambored456.github.io/DiatonicCompass/" class="active">DiatonicCompass</a></li>
-      <li><a href="https://iambored456.github.io/Student-Notation/">Student-Notation</a></li>
-      <li><a href="https://iambored456.github.io/PitchDetect/">PitchDetect</a></li>
-    </ul>
-  </div>
-</nav>
-
+  </nav>
 
   <!-- Existing Diatonic Compass Content -->
   <div class="main-container">
+    <div id="result">&nbsp;</div>
     <div class="wheel-and-belts-container">
       <div class="wheel-container">
         <canvas id="chromaWheel"></canvas>
       </div>
       <div class="belts-container">
+        <!-- Pitch Name Row -->
         <div class="belt-row">
           <div class="belt-controls">
             <label>Pitch Name</label>
-            <button id="rotateGreyRight">Left</button>
-            <button id="rotateGreyLeft">Right</button>
+            <div class="button-group">
+              <button id="rotateGreyLeft">Left</button>
+              <button id="rotateGreyRight">Right</button>
+            </div>
           </div>
           <div class="belt pitch-belt" id="pitchBelt"></div>
         </div>
+        
+        <!-- Scale Degree Row -->
         <div class="belt-row">
           <div class="belt-controls">
             <label>Scale Degree</label>
-            <button id="rotateWhiteRight">Left</button>
-            <button id="rotateWhiteLeft">Right</button>
+            <div class="button-group">
+              <button id="rotateWhiteLeft">Left</button>
+              <button id="rotateWhiteRight">Right</button>
+            </div>
           </div>
           <div class="belt degree-belt" id="degreeBelt"></div>
         </div>
+        
+        <!-- Chromatic Row -->
         <div class="belt-row">
-          <div class="belt-controls invisible">
-            <button></button>
-            <button></button>
+          <div class="belt-controls">
+            <label>Chromatic</label>
+            <div class="button-group invisible">
+              <button disabled>Left</button>
+              <button disabled>Right</button>
+            </div>
           </div>
           <div class="belt chromatic-belt" id="chromaticBelt"></div>
         </div>
       </div>
+      </div>
     </div>
-    <div id="result">&nbsp;</div>
   </div>
 
-  <div class="title-container">
-    <h2>Diatonic Compass by Quinn Fleming</h2>
-  </div>
-
-  <!-- Link to external JavaScript file -->
-  <script src="script.js"></script>
+  <!-- Importing Modules -->
+  <script type="module" src="main.js"></script>
 </body>
 </html>
