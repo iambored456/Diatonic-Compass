@@ -292,18 +292,28 @@ function drawInnerLabels(ctx, centerX, centerY, canvasSize) {
 
 // ===== DRAW RED MARKER =====
 function drawRedMarker(ctx, centerX, centerY, canvasSize) {
-  const markerWidth = canvasSize * 0.125;
-  const markerStartY = -canvasSize * 0.5;
-  const markerHeight = canvasSize * 0.38;
-
-  ctx.strokeStyle = 'red';
-  ctx.lineWidth = canvasSize * 0.008;
-
+  const outerRadius = canvasSize * 0.5;
+  const innerRadius = canvasSize * 0.1; // Small inner radius for wedge point
+  const halfAngleStep = angleStep / 2; // Half width of a regular wedge
   ctx.save();
   ctx.translate(centerX, centerY);
+
+  // Create wedge path
   ctx.beginPath();
-  ctx.rect(-markerWidth / 2, markerStartY, markerWidth, markerHeight);
+  // Start at inner radius
+  const startAngle = -Math.PI/2 - halfAngleStep;
+  const endAngle = -Math.PI/2 + halfAngleStep;
+  // Draw outer arc
+  ctx.arc(0, 0, outerRadius, startAngle, endAngle);
+  // Draw inner arc (in reverse direction)
+  ctx.arc(0, 0, innerRadius, endAngle, startAngle, true);
+  ctx.closePath();
+  
+  // Style the wedge
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = canvasSize * 0.008;
   ctx.stroke();
+  
   ctx.restore();
 }
 
