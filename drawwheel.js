@@ -265,12 +265,12 @@ function drawInnerLabels(ctx, centerX, centerY, canvasSize) {
 
 // ===== DRAW RED MARKER =====
 function drawRedMarker(ctx, centerX, centerY, canvasSize) {
-  const markerWidth = canvasSize * 0.070;
+  const markerWidth = canvasSize * 0.125;
   const markerStartY = -canvasSize * 0.5;
   const markerHeight = canvasSize * 0.38;
 
   ctx.strokeStyle = 'red';
-  ctx.lineWidth = canvasSize * 0.005;
+  ctx.lineWidth = canvasSize * 0.008;
 
   ctx.save();
   ctx.translate(centerX, centerY);
