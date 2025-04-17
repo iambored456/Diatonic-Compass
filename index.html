@@ -4,79 +4,48 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Diatonic Compass</title>
-  <!-- Link to external CSS file -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Navigation Bar -->
-  <nav>
-    <div class="nav-container">
-      <!-- Left-aligned brand (two lines) -->
-      <div class="brand">
-        <p class="small-text">Quinn Fleming's</p>
-        <h1>Music Learning Tools</h1>
-      </div>
-      <!-- Centered links -->
-      <ul>
-        <li><a href="https://iambored456.github.io/Diatonic-Compass/" class="active">Diatonic-Compass</a></li>
-        <li><a href="https://iambored456.github.io/Student-Notation/">Student-Notation</a></li>
-        <li><a href="https://iambored456.github.io/Pitch-Detect/">Pitch-Detect</a></li>
-        <li><a href="https://iambored456.github.io/Visual-Metronome/">Visual-Metronome</a></li>
-        
-      </ul>
-    </div>
-  </nav>
-
-  <!-- Existing Diatonic Compass Content -->
   <div class="main-container">
-    <div id="result">&nbsp;</div>
     <div class="wheel-and-belts-container">
       <div class="wheel-container">
         <canvas id="chromaWheel"></canvas>
       </div>
+      <div id="result"> </div>
       <div class="belts-container">
+        <div id="belt-cursor"></div>
+
         <!-- Pitch Name Row -->
         <div class="belt-row">
-          <div class="belt-controls">
-            <label>Pitch Name</label>
-            <div class="button-group">
-              <button id="rotateGreyLeft">Left</button>
-              <button id="rotateGreyRight">Right</button>
-            </div>
+          <div class="belt pitch-belt" id="pitchBelt">
+            <!-- belt-track -->
           </div>
-          <div class="belt pitch-belt" id="pitchBelt"></div>
         </div>
-        
         <!-- Scale Degree Row -->
         <div class="belt-row">
-          <div class="belt-controls">
-            <label>Scale Degree</label>
-            <div class="button-group">
-              <button id="rotateWhiteLeft">Left</button>
-              <button id="rotateWhiteRight">Right</button>
-            </div>
+          <div class="belt degree-belt" id="degreeBelt">
+             <!-- belt-track -->
           </div>
-          <div class="belt degree-belt" id="degreeBelt"></div>
         </div>
-        
+
+        <!-- **** ADDED: Interval Brackets Row/Container **** -->
+        <div class="interval-brackets-row">
+            <div class="interval-brackets-container" id="intervalBracketsContainer">
+                <!-- Track for brackets will be inserted here by JS -->
+            </div>
+        </div>
+        <!-- ********************************************** -->
+
         <!-- Chromatic Row -->
         <div class="belt-row">
-          <div class="belt-controls">
-            <label>Chromatic</label>
-            <div class="button-group invisible">
-              <button disabled>Left</button>
-              <button disabled>Right</button>
-            </div>
+          <div class="belt chromatic-belt" id="chromaticBelt">
+             <!-- belt-track -->
           </div>
-          <div class="belt chromatic-belt" id="chromaticBelt"></div>
         </div>
-      </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Importing Modules -->
-  <script type="module" src="main.js"></script>
+      </div> <!-- End belts-container -->
+    </div> <!-- End wheel-and-belts-container -->
+  </div> <!-- End main-container -->
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
