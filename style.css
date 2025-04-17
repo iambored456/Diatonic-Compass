@@ -1,289 +1,224 @@
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #f5f5f5;
-    margin: 0;
-    min-height: 100vh;
-    font-family: Arial, sans-serif;
-  }
-  
-  .title-container {
-    text-align: center;
-    padding: 2vh 0;
-    background-color: #ffffff;
-    width: 100%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .title-container h1 {
-    font-size: 3.5vmin;
-    margin-bottom: 0.5vh;
-    color: #333;
-  }
-  
-  .title-container h2 {
-    font-size: 2vmin;
-    color: #666;
-  }
-  
-  .main-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1vh;
-    width: 100%;
-    flex: 1;
-    padding: 1vh 2vw;
-  }
-  
-  #result {
-    text-align: center;
-    font-size: 2.2vmin;
-    color: #333;
-    background-color: #ffffff;
-    padding: 0.75vh 2vw;
-    border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    width: 20%;
-    min-height: 2.5em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1vh;
-    margin-top: 1vh;
-  }
-
-  .wheel-and-belts-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-  }
-  
-  .wheel-container {
-    position: relative;
-    width: 90vw;
-    max-width: 600px;
-    aspect-ratio: 1 / 1;
-    margin-bottom: 1vh;
-  }
-  
-  canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background-color: #ffffff;
-    border: 1px solid #ccc;
-  }
-  
-  .belts-container {
-    width: 100%;
-    max-width: 800px; /* Increased from 600px */
-    display: flex;
-    flex-direction: column;
-    gap: 0.75vh;
-  }
-  
-  .belt-row {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 0.5vh;
-  }
-  
-  .belt-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-width: 150px;
-    gap: 0.5vh;
-  }
-  
-  .belt-controls label {
-    margin-right: auto; /* Push label to left */
-    white-space: nowrap;
-  }
-  
-  .belt-controls button {
-    margin: 0 0.3vh; /* Adjust horizontal margins */
-  }
-  
-  .button-group {
-    display: flex;
-    gap: 0.5vh;
-  }
-  
-  .button-group.invisible {
-    visibility: hidden;
-  }
-  
-  .belt {
-    flex: 1;
-  }
-
-  .belt-controls button:hover {
-    background-color: #ddd;
-  }
-  
-  .belt-controls.invisible {
-    visibility: hidden;
-  }
-  
-  .belt {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    background-color: #e0e0e0;
-    border-radius: 5px;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-    height: 6vh; /* Increased from 4vh */
-    padding-left: calc(100% / 12);
-    padding-right: calc(100% / 12);
-  }
-  
-  .belt-cell {
-    flex: 1;
-    text-align: center;
-    padding: 0.5vh 0; /* Increased from 0.3vh */
-    font-size: 1.4vmin; /* Increased from 1vmin */
-    border-right: 1px solid #ccc;
-    background-color: #ffffff;
-    transition: background-color 0.3s, transform 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .belt-stack {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5vh; /* Reduced from 5px */
-  }
-  
-  .belt-cell:last-child {
-    border-right: none;
-  }
-  
-  .pitch-belt .belt-cell {
-    background-color: #f0f8ff;
-  }
-  
-  .degree-belt .belt-cell {
-    background-color: #fffdf0; /* Very pale yellow */
-}
-
-.degree-belt .belt-cell.scale-degree-yellow {
-    background-color: #ffeb3b; /* Vivid yellow */
-}
-  
-  .chromatic-belt .belt-cell {
-    background-color: #ffe4e1;
-  }
-  
-  .belt-cell.center {
-    background-color: #add8e6;
-    font-weight: bold;
-    border: 2px solid #000;
-    transform: scale(1.1);
-  }
-  
-  .belt-cell.scale-degree {
-    background-color: #b0e0e6;
-  }
-  
-  .belt-cell.scale-degree-red {
-    background-color: #f08080;
-  }
-  
-  .belt-cell.scale-degree-yellow {
-    background-color: #ffffe0;
-  }
-  
-  .belt-stack {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  
-  .belt-stack .belt {
-    margin: 0;
-  }
-
-
-
-
-
-
-
-
-/* ================================
-   NAVIGATION BAR STYLES
-================================ */
-/* Make the nav bar black and full width */
-nav {
-  background-color: #000; /* Black */
-  width: 100%;
-  padding: 10px 0;        /* Top/bottom space */
-}
-/* Use a grid to place items: brand (left), links (center), empty (right) */
-.nav-container {
-  display: grid;
-  grid-template-columns: auto 1fr auto; /* Left, center, right */
-  align-items: center;
-  max-width: 1200px;       /* Optional: set a max width if you prefer a narrower container */
-  margin: 0 auto;          /* Center the grid container horizontally */
-  padding: 0 15px;         /* Side padding */
-}
-/* BRAND (two-line text similar to your fancy title box) */
-.brand {
-  display: flex;
-  flex-direction: column;  /* Stack "Quinn Fleming's" over "Music Learning Tools" */
-  color: #fff;
-}
-.brand .small-text {
-  font-size: 1rem;         /* Smaller line */
-  margin: 0;
-  color: #ccc;             /* Slightly lighter grey than pure white */
-  font-style: italic;      /* Optional style flair */
-}
-.brand h1 {
-  font-size: 1.4rem;       /* Larger line */
-  margin: 0;
-  color: #fff;
-}
-/* NAV LINKS (center column) */
-.nav-container ul {
-  list-style: none;        /* No bullets */
-  display: flex;
-  gap: 20px;               /* Space between links */
-  justify-content: center; /* Ensure the list itself is centered horizontally */
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
-/* Each link inside the <li> */
-.nav-container ul li a {
-  color: #fff;             /* White text on black */
-  text-decoration: none;   /* No underline by default */
-  font-weight: bold;
-  font-size: 1rem;
-}
-/* Active Link Styling */
-.nav-container ul li a.active {
-  text-decoration: underline; /* Underline the active link */
-  /* Alternatively, you can use other styles, such as: */
-  /* background-color: #555; */
-  /* color: #ff0; */
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f5f5f5;
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
 }
 
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1vh;
+  width: 100%;
+  flex: 1;
+  padding: 1vh 2vw;
+}
+
+#result {
+  text-align: center;
+  font-size: 2.2vmin;
+  color: #333;
+  background-color: #ffffff;
+  padding: 0.75vh 2vw;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  width: 20%;
+  min-width: 150px;
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin-top: 1vh;
+  margin-bottom: 1.5vh;
+}
+
+.wheel-and-belts-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 0;
+}
+
+.wheel-container {
+  position: relative;
+  width: 90vw;
+  max-width: 600px;
+  aspect-ratio: 1 / 1;
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid #ccc;
+}
+
+.belts-container {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75vh; /* Gap between main belts */
+  position: relative;
+  margin-top: 1vh; /* Space above belts */
+}
+
+/* --- Belt Cursor --- */
+#belt-cursor {
+  position: absolute;
+  left: 0;
+  top: -2px;
+  bottom: -2px;
+  width: calc(100% / 12);
+  z-index: 10;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 4px solid red;
+  border-radius: 8px;
+  background-color: transparent;
+}
+#belt-cursor::before,
+#belt-cursor::after {
+  content: none;
+}
+
+/* --- Belt Rows --- */
+.belt-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.belt {
+  flex: 1;
+  overflow: hidden;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+  height: 6vh; /* Main belt height */
+  position: relative;
+}
+
+/* --- Interval Brackets Specific Styles --- */
+.interval-brackets-row {
+    width: 100%;
+    display: flex;
+    /* Vertical spacing using margins */
+    margin-top: calc(6vh * 0.3); /* Approx 0.618 / 2 */
+    margin-bottom: calc(6vh * 0.3);
+    height: calc(6vh * 0.61803); /* Golden ratio height relative to main belts */
+}
+
+.interval-brackets-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background-color: transparent;
+    border-radius: 3px;
+}
+
+.interval-brackets-track {
+    display: flex;
+    height: 100%;
+    position: relative;
+    will-change: transform;
+    width: 300%; /* 3 repetitions needed */
+}
+
+.interval-bracket-cell {
+    flex-shrink: 0;
+    height: 100%;
+    position: relative; /* For positioning text/brace */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Text at top */
+    box-sizing: border-box;
+    font-size: 1.4vmin; /* Slightly smaller text */
+    color: #000000;
+    padding-top: 0.3vh;
+    overflow: visible; /* Allow brace to potentially draw outside bounds slightly */
+    /* Add small right margin for visual separation between brackets */
+    /* margin-right: 2px; */ /* Optional: Adjust spacing */
+}
+
+/* Width based on interval steps (data attribute set by JS) */
+.interval-bracket-cell[data-steps="1"] {
+    flex-basis: calc(100% / 36 * 1); /* 1 step wide */
+}
+.interval-bracket-cell[data-steps="2"] {
+    flex-basis: calc(100% / 36 * 2); /* 2 steps wide */
+}
+
+/* Brace styling using ::after pseudo-element */
+.interval-bracket-cell::after {
+    content: '';
+    position: absolute;
+    bottom: 0.5vh;
+    left: 5%; /* Indent slightly */
+    right: 5%; /* Indent slightly */
+    height: 40%;
+    border-bottom: 1.5px solid black;
+    border-left: 1.5px solid black;
+    border-right: 1.5px solid black;
+    border-radius: 0 0 8px 8px; /* More pronounced curve */
+    box-sizing: border-box;
+}
+
+
+/* --- Belt Tracks & Cells (Existing) --- */
+.belt-track {
+  display: flex;
+  height: 100%;
+  position: relative;
+  will-change: transform;
+  width: 300%;
+}
+
+.belt-cell {
+  flex-basis: calc(100% / 36);
+  flex-shrink: 0;
+  height: 100%;
+  text-align: center;
+  font-size: 1.6vmin;
+  border-right: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  color: #333;
+}
+
+/* Highlight for chromatic belt */
+.chromatic-belt .belt-cell.scale-degree-red {
+    background-color: #ffcdd2 !important; /* Use !important to ensure override */
+    font-weight: bold;
+}
+
+/* Text color contrast for pitch belt */
+.belt-cell.black-key {
+    color: #ffffff;
+}
+.belt-cell.white-key {
+    color: #000000;
+}
