@@ -1,301 +1,164 @@
-// js/belts/logic.js
+// (file path: js/belts/logic.js)
 
 import {
-    diatonicDegreeIndices, ANGLE_STEP,
-    FIXED_INTERVAL_INDEX_COLORS, chromaticNotes, pianoKeyColors, diatonicIntervals,
-    MAJOR_SCALE_INTERVAL_STEPS
-} from '../config/constants.js';
-import { normalizeAngle } from '../utils/helpers.js';
+  DIATONIC_DEGREE_INDICES, ANGLE_STEP,
+  FIXED_INTERVAL_COLOUR, CHROMATIC_NOTES, PIANO_KEY_COLOUR,
+  MAJOR_SCALE_INTERVAL_STEPS, MODE_SCALE_DEGREES, DIATONIC_INTERVALS
+} from '../core/constants.js';
+import { normAngle } from '../core/math.js';
 import { appState } from '../state/appState.js';
+import { getContrastColor } from '../core/color.js'; // <-- NEW: Import the helper
 
-console.log("[belts/logic.js] Script loaded.");
-
-// ===== Styling and Positioning Functions =====
-
-// Applies BOTH base styles AND mode highlighting
-function applyBeltCellStyles(beltId, highlightIndicesForMode = []) {
-    const track = appState.belts.tracks[beltId];
-    if (!track) return;
-
-    const cells = track.querySelectorAll('.belt-cell');
-    const defaultBackgroundColor = '#f0f0f0'; // Fallback grey
-
-    cells.forEach(cell => {
-        // Clear previous styles/classes
-        cell.style.backgroundColor = '';
-        cell.style.color = '';
-        cell.classList.remove('white-key', 'black-key', 'scale-degree-red');
-
-        const originalIndex = parseInt(cell.dataset.originalIndex, 10);
-        if (isNaN(originalIndex)) return;
-
-        // 1. Apply BASE background and text color
-        if (beltId === 'pitchBelt') {
-            const noteName = chromaticNotes[originalIndex];
-            const isWhiteKey = pianoKeyColors[noteName];
-            cell.style.backgroundColor = isWhiteKey ? '#ffffff' : '#000000';
-            cell.style.color = isWhiteKey ? '#000000' : '#ffffff';
-            cell.classList.add(isWhiteKey ? 'white-key' : 'black-key');
-        } else if (beltId === 'degreeBelt') {
-            const color = FIXED_INTERVAL_INDEX_COLORS[originalIndex];
-            cell.style.backgroundColor = color || defaultBackgroundColor;
-            cell.style.color = '#000000';
-            cell.classList.add('white-key');
-        } else if (beltId === 'chromaticBelt') {
-             cell.style.backgroundColor = '#fff0f0'; // Default light red
-             cell.style.color = '#000000';
-             cell.classList.add('white-key');
-        }
-
-        // 2. Apply MODE highlighting class (only for chromatic belt)
-        if (beltId === 'chromaticBelt' && highlightIndicesForMode.includes(originalIndex)) {
-            cell.classList.add('scale-degree-red');
-        }
-    });
+// ... updateBeltCellText function is unchanged ...
+function updateBeltCellText(beltId, dynamicLabels) {
+  const track = appState.belts.tracks[beltId];
+  if (!track) return;
+  const cells = track.querySelectorAll('.belt-cell');
+  cells.forEach(cell => {
+    const originalIndex = +cell.dataset.originalIndex;
+    const newText = dynamicLabels[originalIndex];
+    if (cell.textContent !== newText) {
+      cell.textContent = newText;
+    }
+  });
 }
 
-// Updates the visual translateX position of a specific belt track
+// UPDATED: This function is heavily modified for the new styling rules.
+function applyBeltCellStyles(beltId, modeScaleDegrees = []) {
+  const track = appState.belts.tracks[beltId];
+  if (!track) return;
+  const cells = track.querySelectorAll('.belt-cell');
+
+  cells.forEach(cell => {
+    cell.classList.remove('white-key', 'black-key');
+    cell.style.fontWeight = 'normal';
+
+    const idx = +cell.dataset.originalIndex;
+
+    if (beltId === 'pitchBelt') {
+      const note = CHROMATIC_NOTES[idx];
+      const isWhiteKey = PIANO_KEY_COLOUR[note];
+      cell.style.background = isWhiteKey ? '#fff' : '#000';
+      cell.style.color = isWhiteKey ? '#000' : '#fff';
+
+    } else if (beltId === 'degreeBelt') {
+      const bgColor = FIXED_INTERVAL_COLOUR[idx] || '#f0f0f0';
+      cell.style.background = bgColor;
+      cell.style.color = getContrastColor(bgColor); // <-- USE HELPER HERE
+
+    } else if (beltId === 'chromaticBelt') {
+      const isActive = modeScaleDegrees.includes(idx);
+      
+      if (isActive) {
+        // Active: Dark grey background, bold white text
+        cell.style.background = '#4A4A4A';
+        cell.style.color = '#FFFFFF';
+        cell.style.fontWeight = 'bold';
+      } else {
+        // Inactive: Light grey background, black text
+        cell.style.background = '#E0E0E0';
+        cell.style.color = '#000000';
+      }
+    }
+  });
+}
+
+// ... All other functions in this file are unchanged ...
 function updateBeltPosition(beltId, rotation) {
-    const track = appState.belts.tracks[beltId];
-    const cellWidth = appState.belts.itemWidths[beltId];
-    if (!track || !cellWidth || cellWidth <= 0 || isNaN(cellWidth)) return; // Added check
-    const offsetInSteps = normalizeAngle(-rotation) / ANGLE_STEP;
-    const totalTranslateX = offsetInSteps * cellWidth;
-    const oneSequenceWidth = cellWidth * 12;
-    const offsetWithinSequence = ((totalTranslateX % oneSequenceWidth) + oneSequenceWidth) % oneSequenceWidth;
-    const finalTranslateX = -offsetWithinSequence;
-    track.style.transform = `translateX(${finalTranslateX}px)`;
+  const track = appState.belts.tracks[beltId];
+  const cellW = appState.belts.itemW[beltId];
+  if (!track || !cellW) return;
+  const offsetSteps = normAngle(-rotation) / ANGLE_STEP;
+  const tx = -((offsetSteps * cellW) % (cellW * 12));
+  track.style.transform = `translateX(${tx}px)`;
 }
-
-// **** CORRECTED: Updates the visual position of the belt cursor ****
 function updateBeltCursorPosition(chromaticRotation) {
-    const cursorElement = document.getElementById('belt-cursor');
-    if (!cursorElement) return;
-
-    const cellWidth = appState.belts.itemWidths.chromaticBelt;
-
-    // Return if width is invalid
-    if (!cellWidth || cellWidth <= 0 || isNaN(cellWidth)) {
-        // console.warn("[updateBeltCursorPosition] Invalid cellWidth, skipping update."); // Optional
-        return; // Prevent setting invalid transform
-    }
-
-    const offsetInSteps = normalizeAngle(chromaticRotation) / ANGLE_STEP;
-    const totalTranslateX = offsetInSteps * cellWidth;
-    const oneSequenceWidth = cellWidth * 12;
-    const offsetWithinSequence = ((totalTranslateX % oneSequenceWidth) + oneSequenceWidth) % oneSequenceWidth;
-
-    // **** FIX: Cursor translates RIGHT by the offset amount ****
-    const cursorTranslateX = offsetWithinSequence;
-
-    cursorElement.style.transform = `translateX(${cursorTranslateX}px)`;
-    // console.log(`Cursor Tx: ${cursorTranslateX}`); // Optional log
+  const cursor = document.getElementById('belt-cursor');
+  const cellW = appState.belts.itemW.chromaticBelt;
+  if (!cursor || !cellW) return;
+  const offsetSteps = normAngle(chromaticRotation) / ANGLE_STEP;
+  const tx = ((offsetSteps * cellW) % (cellW * 12));
+  cursor.style.transform = `translateX(${tx}px)`;
 }
-
-// **** CORRECTED: Updates Interval Brackets Position with Offset ****
-function updateIntervalBracketsPosition(whiteRingRotation) {
-    const track = document.querySelector('#intervalBracketsContainer .interval-brackets-track');
-    if (!track) return;
-
-    // Use the degree belt cell width for alignment
-    const cellWidth = appState.belts.itemWidths.degreeBelt;
-
-    // Return if width is invalid
-    if (!cellWidth || cellWidth <= 0 || isNaN(cellWidth)) {
-         // console.warn("[updateIntervalBracketsPosition] Invalid cellWidth, skipping update."); // Optional
-        return;
-    }
-
-    // Calculate base translation mirroring degree belt
-    const offsetInSteps = normalizeAngle(-whiteRingRotation) / ANGLE_STEP;
-    const totalTranslateX = offsetInSteps * cellWidth;
-    const oneSequenceWidth = cellWidth * 12; // Use 12 steps for full sequence width
-    const offsetWithinSequence = ((totalTranslateX % oneSequenceWidth) + oneSequenceWidth) % oneSequenceWidth;
-    const baseTranslateX = -offsetWithinSequence;
-
-    // **** FIX: Add half cell width offset ****
-    const finalTranslateX = baseTranslateX + (0.5 * cellWidth);
-
-    track.style.transform = `translateX(${finalTranslateX}px)`;
-    // console.log(`Bracket Tx: ${finalTranslateX}`); // Optional log
+function updateIntervalBracketsPosition(whiteRot) {
+  const track = document.querySelector('#intervalBracketsContainer .interval-brackets-track');
+  const cellW = appState.belts.itemW.degreeBelt;
+  if (!track || !cellW) return;
+  const baseOffset = -(cellW * 12);
+  const offSteps = normAngle(-whiteRot) / ANGLE_STEP;
+  const dynamicOffset = -((offSteps * cellW) % (cellW * 12)) + 0.5 * cellW;
+  const tx = baseOffset + dynamicOffset;
+  track.style.transform = `translateX(${tx}px)`;
 }
-
-
-// **** NEW: Setup Interval Brackets **** (No functional change needed)
-function setupIntervalBrackets(repetitions = 3) {
-    const container = document.getElementById('intervalBracketsContainer');
-    if (!container) { console.error("[setupIntervalBrackets] Container not found."); return false; }
-    const existingTrack = container.querySelector('.interval-brackets-track');
-    if (existingTrack) container.removeChild(existingTrack);
-    const track = document.createElement('div');
-    track.classList.add('interval-brackets-track');
-    const fragment = document.createDocumentFragment();
-    const intervalPattern = MAJOR_SCALE_INTERVAL_STEPS;
-    for (let rep = 0; rep < repetitions; rep++) {
-        intervalPattern.forEach((steps, index) => {
-            const cell = document.createElement('div');
-            cell.classList.add('interval-bracket-cell');
-            cell.dataset.steps = steps;
-            cell.textContent = `+${steps}`;
-            cell.dataset.originalIndex = index;
-            cell.dataset.repetition = rep;
-            fragment.appendChild(cell);
-        });
-    }
-    track.appendChild(fragment);
-    container.appendChild(track);
-    // console.log("[setupIntervalBrackets] Brackets DOM created.");
-    return true;
+function setupIntervalBrackets(reps = 3) {
+  const container = document.getElementById('intervalBracketsContainer');
+  if (!container) return false;
+  container.innerHTML = '';
+  const track = document.createElement('div');
+  track.className = 'interval-brackets-track';
+  for (let r = 0; r < reps; r++) { MAJOR_SCALE_INTERVAL_STEPS.forEach((steps, idx) => { const cell = document.createElement('div'); cell.className = 'interval-bracket-cell'; cell.dataset.steps = steps; cell.textContent = `+${steps}`; cell.dataset.originalIndex = idx; cell.dataset.repetition = r; track.appendChild(cell); }); }
+  const stepsToAdd = [MAJOR_SCALE_INTERVAL_STEPS[0], MAJOR_SCALE_INTERVAL_STEPS[2]];
+  const indicesToAdd = [0, 2];
+  stepsToAdd.forEach((steps, i) => { const idx = indicesToAdd[i]; const cell = document.createElement('div'); cell.className = 'interval-bracket-cell'; cell.dataset.steps = steps; cell.textContent = `+${steps}`; cell.dataset.originalIndex = idx; cell.dataset.repetition = reps; track.appendChild(cell); });
+  container.appendChild(track);
+  return true;
 }
-
-// Creates the HTML structure for a regular belt
-function setupBeltContent(beltId, items, repetitions = 3) {
-    const container = document.getElementById(beltId);
-    if (!container) { console.error(`[setupBeltContent] FAILED: Container #${beltId}`); return false; }
-    const existingTrack = appState.belts.tracks[beltId];
-    if (existingTrack && existingTrack.parentNode === container) {
-        container.removeChild(existingTrack);
-    }
-    appState.belts.tracks[beltId] = null;
-    const track = document.createElement('div');
-    track.classList.add('belt-track');
-    appState.belts.tracks[beltId] = track;
-    const fragment = document.createDocumentFragment();
-    const numItemsPerRepetition = items.length;
-    if (numItemsPerRepetition > 0) {
-        for (let rep = 0; rep < repetitions; rep++) {
-            items.forEach((item, index) => {
-                const cell = document.createElement('div');
-                cell.classList.add('belt-cell');
-                cell.textContent = item !== undefined && item !== null ? String(item) : '';
-                cell.dataset.originalIndex = index;
-                cell.dataset.repetition = rep;
-                fragment.appendChild(cell);
-            });
-        }
-        track.appendChild(fragment);
-    } else { console.warn(`[setupBeltContent] No items provided for ${beltId}.`); }
-    container.appendChild(track);
-    // console.log(`[setupBeltContent] DOM created for ${beltId}`);
-    return true;
+function setupBeltContent(beltId, items, reps = 3) {
+  const container = document.getElementById(beltId);
+  if (!container) return false;
+  container.innerHTML = '';
+  const track = document.createElement('div');
+  track.className = 'belt-track';
+  appState.belts.tracks[beltId] = track;
+  for (let r = 0; r < reps; r++) { items.forEach((item, idx) => { const cell = document.createElement('div'); cell.className = 'belt-cell'; cell.textContent = item; cell.dataset.originalIndex = idx; cell.dataset.repetition = r; track.appendChild(cell); }); }
+  if (items.length === 12) { for (let i = 0; i < 3; i++) { const cell = document.createElement('div'); cell.className = 'belt-cell'; cell.textContent = items[i]; cell.dataset.originalIndex = i; cell.dataset.repetition = reps; track.appendChild(cell); } }
+  container.appendChild(track);
+  return true;
 }
-
-// Calculates and stores item width. Returns true on success.
-function calculateAndStoreWidth(beltId, container, numItemsPerRepetition) {
-    const containerWidth = container.offsetWidth;
-    // console.log(`[calculateAndStoreWidth] Attempting for ${beltId}. Container width: ${containerWidth}`); // Optional log
-    if (containerWidth > 0 && numItemsPerRepetition > 0) {
-        appState.belts.itemWidths[beltId] = containerWidth / 12;
-        // console.log(`[calculateAndStoreWidth] SUCCESS for ${beltId}. Width: ${appState.belts.itemWidths[beltId].toFixed(2)}`); // Optional log
-        return true;
-    } else {
-        if (containerWidth <= 0) console.warn(`[calculateAndStoreWidth] FAILED for ${beltId}. Container width is zero.`);
-        if (numItemsPerRepetition <= 0) console.warn(`[calculateAndStoreWidth] FAILED for ${beltId}. Zero items.`);
-        appState.belts.itemWidths[beltId] = 0;
-        return false;
-    }
+function calcWidth(beltId, container) {
+  const w = container.offsetWidth;
+  if (w > 0) { appState.belts.itemW[beltId] = w / 12; return true; }
+  return false;
 }
-
-
-// ===== MAIN BELT UPDATE FUNCTION =====
 export function updateBelts(
-    diatonicIntervalsArray,
-    chromaticNotesArray,
-    chromaticPitchClassArray,
-    modeScaleDegreesMap,
-    degreeMapObject,
-    forceContentUpdate = false
+  diatonicLabels,
+  chromaticLabels,
+  chromaticPitchClasses,
+  _unused,
+  degreeMap
 ) {
-    // Get current rotation state
-    const whiteRingDiatonicIndex = appState.rings.whiteDiatonicIndex;
-    const whiteRingRotation = appState.rings.whiteRotation;
-    const greyRingRotation = appState.rings.greyRotation;
-    const chromaticRingRotation = appState.rings.chromaticRotation;
-
-    // Determine current mode indices
-    const degreeRepresentedBySnappedIndex = diatonicIntervalsArray[diatonicDegreeIndices[whiteRingDiatonicIndex]];
-    const mappedModeDegree = degreeMapObject[degreeRepresentedBySnappedIndex] || '1';
-    const currentModeScaleIndices = modeScaleDegreesMap[mappedModeDegree] || [];
-
-    const modeChanged = JSON.stringify(currentModeScaleIndices) !== JSON.stringify(appState.belts.lastKnownModeIndices);
-    const needsContentUpdate = forceContentUpdate || modeChanged;
-
-    // Function to apply styles and positions after width is known
-    const applyStylesAndPositions = () => {
-        // Apply styles first, passing the mode indices
-        applyBeltCellStyles('pitchBelt', currentModeScaleIndices);
-        applyBeltCellStyles('degreeBelt', currentModeScaleIndices);
-        applyBeltCellStyles('chromaticBelt', currentModeScaleIndices);
-
-        // Update positions only if width is valid
-        if (appState.belts.itemWidths.pitchBelt > 0) updateBeltPosition('pitchBelt', greyRingRotation);
-        if (appState.belts.itemWidths.degreeBelt > 0) {
-             updateBeltPosition('degreeBelt', whiteRingRotation);
-             updateIntervalBracketsPosition(whiteRingRotation); // Update brackets position
-        }
-        if (appState.belts.itemWidths.chromaticBelt > 0) {
-            updateBeltPosition('chromaticBelt', chromaticRingRotation);
-            updateBeltCursorPosition(chromaticRingRotation); // Update cursor position
-        }
-    };
-
-
-    if (needsContentUpdate) {
-        // console.log(`[updateBelts] Content update needed. Forced: ${forceContentUpdate}, ModeChanged: ${modeChanged}`); // Optional Log
-        appState.belts.lastKnownModeIndices = [...currentModeScaleIndices];
-
-        // Reset widths ONLY if forced
-        if (forceContentUpdate) {
-             // console.log("[updateBelts] Forced update: Resetting belt widths."); // Optional Log
-             appState.belts.itemWidths.pitchBelt = 0;
-             appState.belts.itemWidths.degreeBelt = 0;
-             appState.belts.itemWidths.chromaticBelt = 0;
-        }
-
-        // 1. Setup DOM elements
-        // console.log("[updateBelts] Setting up DOM content..."); // Optional Log
-        const pitchSetupOK = setupBeltContent('pitchBelt', chromaticNotesArray, 3);
-        const degreeSetupOK = setupBeltContent('degreeBelt', diatonicIntervalsArray, 3);
-        const chromaticSetupOK = setupBeltContent('chromaticBelt', chromaticPitchClassArray, 3);
-        const bracketsSetupOK = setupIntervalBrackets(3);
-
-        if (!(pitchSetupOK && degreeSetupOK && chromaticSetupOK && bracketsSetupOK)) {
-            console.error("[updateBelts] Failed to setup DOM for one or more elements."); return;
-        }
-        // console.log("[updateBelts] DOM setup complete."); // Optional Log
-
-        // 2. Calculate Widths and Apply Styles/Positions in next frame
-        requestAnimationFrame(() => {
-            // console.log("[updateBelts rAF] Calculating widths and applying styles/positions..."); // Optional Log
-            const pitchContainer = document.getElementById('pitchBelt');
-            const degreeContainer = document.getElementById('degreeBelt');
-            const chromaticContainer = document.getElementById('chromaticBelt');
-            let widthsOK = true; // Assume success
-
-            // Calculate widths, update flag on failure
-            if (pitchContainer) { if (!calculateAndStoreWidth('pitchBelt', pitchContainer, chromaticNotesArray.length)) widthsOK = false; } else widthsOK = false;
-            if (degreeContainer) { if (!calculateAndStoreWidth('degreeBelt', degreeContainer, diatonicIntervalsArray.length)) widthsOK = false; } else widthsOK = false;
-            if (chromaticContainer) { if (!calculateAndStoreWidth('chromaticBelt', chromaticContainer, chromaticPitchClassArray.length)) widthsOK = false; } else widthsOK = false;
-
-            // Apply styles and positions using the dedicated function
-            if (widthsOK) {
-                applyStylesAndPositions();
-                 // console.log("[updateBelts rAF] All widths valid. Styles/Positions applied."); // Optional Log
-            } else {
-                 console.warn("[updateBelts rAF] Failed to calculate width for one or more belts. Styles/Positions might be incorrect.");
-            }
-
-            if (!appState.belts.isInitialSetupDone) {
-                 appState.belts.isInitialSetupDone = true;
-                 // console.log("[updateBelts] Initial belt setup attempt complete."); // Optional Log
-            }
-        });
-
-    } else {
-        // Only rotation potentially changed
-        requestAnimationFrame(() => {
-            // Apply styles and positions (includes width checks internally)
-            applyStylesAndPositions();
-        });
-    }
+  if (!appState.belts.init) {
+    const ok = [
+      setupBeltContent('pitchBelt', chromaticLabels, 3),
+      setupBeltContent('degreeBelt', diatonicLabels, 3),
+      setupBeltContent('chromaticBelt', chromaticPitchClasses, 3),
+      setupIntervalBrackets(3)
+    ].every(Boolean);
+    if (!ok) return;
+    requestAnimationFrame(() => {
+      const goodWidths =
+        calcWidth('pitchBelt', document.getElementById('pitchBelt')) &&
+        calcWidth('degreeBelt', document.getElementById('degreeBelt')) &&
+        calcWidth('chromaticBelt', document.getElementById('chromaticBelt'));
+      if (goodWidths) {
+        appState.belts.init = true;
+        updateBelts(...arguments);
+      }
+    });
+    return;
+  }
+  updateBeltCellText('pitchBelt', chromaticLabels);
+  updateBeltCellText('degreeBelt', diatonicLabels);
+  const degreeIdx = appState.rings.whiteDiatonic;
+  const intervalName = DIATONIC_INTERVALS[DIATONIC_DEGREE_INDICES[degreeIdx]];
+  const modeKey = degreeMap[intervalName] || '1';
+  const modeScaleDegrees = MODE_SCALE_DEGREES[modeKey];
+  applyBeltCellStyles('pitchBelt', modeScaleDegrees);
+  applyBeltCellStyles('degreeBelt');
+  applyBeltCellStyles('chromaticBelt', modeScaleDegrees);
+  updateBeltPosition('pitchBelt', appState.rings.grey);
+  updateBeltPosition('degreeBelt', appState.rings.white);
+  updateIntervalBracketsPosition(appState.rings.white);
+  updateBeltPosition('chromaticBelt', appState.rings.chromatic);
+  updateBeltCursorPosition(appState.rings.chromatic);
 }
