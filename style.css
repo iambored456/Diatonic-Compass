@@ -1,73 +1,118 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  src: url('./fonts/AtkinsonHyperlegibleNext-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  src: url('./fonts/AtkinsonHyperlegibleNext-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+:root {
+  /* --- BASE UNIT --- */
+  --unit: clamp(0.75px, 0.2vmin, 2px);
+
+  /* --- BORDERS & RADII --- */
+  --border-width: var(--unit);
+  --border-width-medium: calc(var(--unit) * 1.5);
+  --border-width-thick: calc(var(--unit) * 2.5);
+  --border-width-cursor: calc(var(--unit) * 3);
+  
+  --radius-small: calc(var(--unit) * 5);
+  --radius-medium: calc(var(--unit) * 8);
+
+  /* --- SPACING SCALE (Single Source of Truth) --- */
+  --space-xs: 0.5vh;
+  --space-s:  .5vh;
+  --space-m:  1vh;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden; 
 }
 
 body {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #f5f5f5;
-  margin: 0;
-  min-height: 100vh;
-  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
 }
-
 
 .main-container {
+  flex: 1;
+  width: 100%;
+  padding: var(--space-m);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1vh;
-  width: 100%;
-  flex: 1;
-  padding: 1vh 2vw;
-}
-
-#result {
-  text-align: center;
-  font-size: 2.2vmin;
-  color: #333;
-  background-color: #ffffff;
-  padding: 0.75vh 2vw;
-  border-radius: 5px;
-  box-shadow: 0 0 5px rgba(0,0,0,0.1);
-  width: 20%;
-  min-width: 150px;
-  min-height: 2.5em;
-  display: flex;
   align-items: center;
   justify-content: center;
-  align-self: center;
-  margin-top: 1vh;
-  margin-bottom: 1.5vh;
-}
-
-.wheel-and-belts-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  gap: 0;
+  gap: var(--space-m);
 }
 
 .wheel-container {
   position: relative;
-  width: 90vw;
+  width: min(90vw, 85vh); 
   max-width: 600px;
   aspect-ratio: 1 / 1;
+  flex-shrink: 0;
 }
 
 canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: #ffffff;
-  border: 1px solid #ccc;
+  background: #fff;
+  border: var(--border-width) solid #ccc;
+}
+
+#result-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  width: 100%;
+  max-width: 350px;
+  margin: 0;
+  min-height: 3em;
+  padding: var(--space-xs) var(--space-s);
+  border-radius: var(--radius-small);
+  background: #fff;
+  color: #333;
+  box-shadow: 0 0 5px rgba(0,0,0,.1);
+  flex-shrink: 0;
+}
+
+#result-text {
+  flex-grow: 1;
+  text-align: center;
+  font-size: clamp(16px, 2.2vmin, 26px);
+  /* ADDED: This stabilizes the vertical alignment of the text. */
+  line-height: 1.2;
+}
+
+.accidental-toggle {
+  background: #e0e0e0;
+  border: var(--border-width) solid #ccc;
+  color: #333;
+  font-size: clamp(18px, 2.8vmin, 28px);
+  font-weight: bold;
+  border-radius: var(--radius-small);
+  padding: var(--space-xs) var(--space-s);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.2s, background-color 0.2s, visibility 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.accidental-toggle.active {
+  background-color: #FFEB3B;
+  opacity: 1;
 }
 
 .belts-container {
@@ -75,150 +120,85 @@ canvas {
   max-width: 800px;
   display: flex;
   flex-direction: column;
-  gap: 0.75vh; /* Gap between main belts */
+  gap: var(--space-s);
   position: relative;
-  margin-top: 1vh; /* Space above belts */
+  flex-shrink: 0;
 }
 
-/* --- Belt Cursor --- */
 #belt-cursor {
   position: absolute;
+  top: calc(-1 * var(--border-width-thick));
+  bottom: calc(-1 * var(--border-width-thick));
   left: 0;
-  top: -2px;
-  bottom: -2px;
   width: calc(100% / 12);
-  z-index: 10;
   pointer-events: none;
-  box-sizing: border-box;
-  border: 4px solid red;
-  border-radius: 8px;
-  background-color: transparent;
-}
-#belt-cursor::before,
-#belt-cursor::after {
-  content: none;
-}
-
-/* --- Belt Rows --- */
-.belt-row {
-  display: flex;
-  align-items: center;
-  width: 100%;
+  border: var(--border-width-cursor) solid red;
+  border-radius: var(--radius-medium);
+  z-index: 100;
 }
 
 .belt {
-  flex: 1;
+  height: 6vh;
+  background: #e0e0e0;
+  border-radius: var(--radius-small);
   overflow: hidden;
-  background-color: #e0e0e0;
-  border-radius: 5px;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-  height: 6vh; /* Main belt height */
   position: relative;
+  box-shadow: inset 0 0 5px rgba(0,0,0,.1);
 }
 
-/* --- Interval Brackets Specific Styles --- */
-.interval-brackets-row {
-    width: 100%;
-    display: flex;
-    /* Vertical spacing using margins */
-    margin-top: calc(6vh * 0.3); /* Approx 0.618 / 2 */
-    margin-bottom: calc(6vh * 0.3);
-    height: calc(6vh * 0.61803); /* Golden ratio height relative to main belts */
-}
-
-.interval-brackets-container {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    background-color: transparent;
-    border-radius: 3px;
-}
-
-.interval-brackets-track {
-    display: flex;
-    height: 100%;
-    position: relative;
-    will-change: transform;
-    width: 300%; /* 3 repetitions needed */
-}
-
-.interval-bracket-cell {
-    flex-shrink: 0;
-    height: 100%;
-    position: relative; /* For positioning text/brace */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* Text at top */
-    box-sizing: border-box;
-    font-size: 1.4vmin; /* Slightly smaller text */
-    color: #000000;
-    padding-top: 0.3vh;
-    overflow: visible; /* Allow brace to potentially draw outside bounds slightly */
-    /* Add small right margin for visual separation between brackets */
-    /* margin-right: 2px; */ /* Optional: Adjust spacing */
-}
-
-/* Width based on interval steps (data attribute set by JS) */
-.interval-bracket-cell[data-steps="1"] {
-    flex-basis: calc(100% / 36 * 1); /* 1 step wide */
-}
-.interval-bracket-cell[data-steps="2"] {
-    flex-basis: calc(100% / 36 * 2); /* 2 steps wide */
-}
-
-/* Brace styling using ::after pseudo-element */
-.interval-bracket-cell::after {
-    content: '';
-    position: absolute;
-    bottom: 0.5vh;
-    left: 5%; /* Indent slightly */
-    right: 5%; /* Indent slightly */
-    height: 40%;
-    border-bottom: 1.5px solid black;
-    border-left: 1.5px solid black;
-    border-right: 1.5px solid black;
-    border-radius: 0 0 8px 8px; /* More pronounced curve */
-    box-sizing: border-box;
-}
-
-
-/* --- Belt Tracks & Cells (Existing) --- */
 .belt-track {
   display: flex;
   height: 100%;
-  position: relative;
   will-change: transform;
-  width: 300%;
+  width: 325%;
 }
 
 .belt-cell {
-  flex-basis: calc(100% / 36);
-  flex-shrink: 0;
-  height: 100%;
-  text-align: center;
-  font-size: 1.6vmin;
-  border-right: 1px solid #ccc;
+  flex: 0 0 calc(100% / 39);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: clamp(15px, 2.2vmin, 24px);
+  border-right: var(--border-width) solid #ccc;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  color: #333;
 }
 
-/* Highlight for chromatic belt */
-.chromatic-belt .belt-cell.scale-degree-red {
-    background-color: #ffcdd2 !important; /* Use !important to ensure override */
-    font-weight: bold;
+.interval-brackets-container {
+  height: calc(6vh * 0.618);
+  overflow: hidden;
+  position: relative;
 }
 
-/* Text color contrast for pitch belt */
-.belt-cell.black-key {
-    color: #ffffff;
+.interval-brackets-track {
+  display:flex;
+  height:100%;
+  will-change: transform;
+  width:325%;
 }
-.belt-cell.white-key {
-    color: #000000;
+
+.interval-bracket-cell {
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  font-size:clamp(12px, 1.8vmin, 22px);
+  padding-top: var(--space-xs);
+  position:relative;
+  user-select: none;
+}
+
+.interval-bracket-cell[data-steps="1"] { flex-basis:calc(100%/39*1); }
+.interval-bracket-cell[data-steps="2"] { flex-basis:calc(100%/39*2); }
+
+.interval-bracket-cell::after {
+  content:"";
+  position:absolute;
+  bottom: var(--space-xs);
+  left:5%;
+  right:5%;
+  height:40%;
+  border: var(--border-width-medium) solid #000;
+  border-top:none;
+  border-radius:0 0 var(--radius-medium) var(--radius-medium);
 }
