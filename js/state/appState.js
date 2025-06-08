@@ -1,14 +1,28 @@
+// (file path: js/state/appState.js)
+
 export const appState = {
     rings: {
-      grey: 0,
-      white: 0,
+      pitchClass: 0,
+      degree: 0,
       chromatic: 0,
-      whiteDiatonic: 0 // index into DIATONIC_DEGREE_INDICES
+      // REMOVED: degreeTonicIndex is no longer needed.
     },
-    drag: { active:null, startX:0, startY:0, startGrey:0, startWhite:0, startChrom:0 },
-    belts:{ itemW:{}, tracks:{}, lastMode:[], init:false },
+    drag: { 
+      active:null, 
+      startX:0, 
+      startY:0, 
+      startPitchClass:0,
+      startDegree:0,
+      startChrom:0 
+    },
+    belts:{ 
+        itemW:{}, 
+        tracks:{}, 
+        init:false,
+        // REMOVED: highlightPattern is now calculated dynamically.
+    },
     dimensions:{ size:0, cx:0, cy:0 },
-    animation: null, // { t0, from:{}, to:{} } when active
+    animation: null,
     display: {
       sharp: true,
       flat: true,
