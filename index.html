@@ -1,51 +1,42 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Diatonic Compass</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="main-container">
-    <div class="wheel-and-belts-container">
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diatonic Compass</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="main-container" role="application" aria-label="Diatonic Compass interactive widget">
       <div class="wheel-container">
-        <canvas id="chromaWheel"></canvas>
+        <canvas id="chromaWheel" aria-label="Diatonic Compass concentric rings"></canvas>
       </div>
-      <div id="result"> </div>
+      
+      <!-- The container for the result display and buttons -->
+      <div id="result-container">
+        <button id="flat-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle flat names">♭</button>
+        <!-- CRITICAL FIX: The ID is now "result-text" to match the JavaScript -->
+        <div id="result-text" role="status" aria-live="polite"></div>
+        <button id="sharp-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle sharp names">♯</button>
+      </div>
+
+
+      <!-- belts -->
       <div class="belts-container">
-        <div id="belt-cursor"></div>
+        <div id="belt-cursor" aria-hidden="true"></div>
 
-        <!-- Pitch Name Row -->
-        <div class="belt-row">
-          <div class="belt pitch-belt" id="pitchBelt">
-            <!-- belt-track -->
-          </div>
-        </div>
-        <!-- Scale Degree Row -->
-        <div class="belt-row">
-          <div class="belt degree-belt" id="degreeBelt">
-             <!-- belt-track -->
-          </div>
+        <div class="belt pitch-belt" id="pitchBelt" role="listbox" aria-label="Pitch‑name belt"></div>
+        <div class="belt degree-belt" id="degreeBelt" role="listbox" aria-label="Scale‑degree belt"></div>
+
+        <div class="interval-brackets-wrapper" aria-hidden="true">
+          <div class="interval-brackets-container" id="intervalBracketsContainer" role="presentation"></div>
         </div>
 
-        <!-- **** ADDED: Interval Brackets Row/Container **** -->
-        <div class="interval-brackets-row">
-            <div class="interval-brackets-container" id="intervalBracketsContainer">
-                <!-- Track for brackets will be inserted here by JS -->
-            </div>
-        </div>
-        <!-- ********************************************** -->
+        <div class="belt chromatic-belt" id="chromaticBelt" role="listbox" aria-label="Chromatic‑index belt"></div>
+      </div>
+    </div>
 
-        <!-- Chromatic Row -->
-        <div class="belt-row">
-          <div class="belt chromatic-belt" id="chromaticBelt">
-             <!-- belt-track -->
-          </div>
-        </div>
-      </div> <!-- End belts-container -->
-    </div> <!-- End wheel-and-belts-container -->
-  </div> <!-- End main-container -->
-  <script type="module" src="js/main.js"></script>
-</body>
+    <!-- entry point -->
+    <script type="module" src="js/main.js"></script>
+  </body>
 </html>
