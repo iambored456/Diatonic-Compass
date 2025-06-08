@@ -1,20 +1,19 @@
+// (file path: js/main.js)
+
 import { appState } from './state/appState.js';
-import { CHROMATIC_NOTES, DIATONIC_INTERVALS, DIATONIC_DEGREE_INDICES, DEGREE_MAP, MODE_NAME } from './core/constants.js';
+import { CHROMATIC_NOTES, DIATONIC_INTERVALS, DEGREE_MAP, MODE_NAME, MODE_SCALE_DEGREES } from './core/constants.js';
 import { drawWheel } from './canvas/drawing.js';
 import { initCanvasInteraction } from './canvas/interaction.js';
 import { initBeltInteraction } from './belts/interaction.js';
 import { makeRenderLoop } from './core/renderLoop.js';
-import { settleMode } from './core/animation.js';
-import { indexAtTop } from './core/math.js';
+import { indexAtTop, normAngle } from './core/math.js';
 import { updateBelts } from './belts/logic.js';
 
-// Get references to all relevant elements
 const canvas = document.getElementById('chromaWheel');
 const resultText = document.getElementById('result-text');
 const flatBtn = document.getElementById('flat-btn');
 const sharpBtn = document.getElementById('sharp-btn');
 
-// ----- Sizing -----
 const ro = new ResizeObserver(entries=>{
   for(const entry of entries){
     const {width,height} = entry.contentRect;
@@ -25,48 +24,74 @@ const ro = new ResizeObserver(entries=>{
 });
 ro.observe(canvas.parentElement);
 
-// ----- Label Generation Logic -----
 function generateDisplayLabels() {
   const { sharp, flat } = appState.display;
-
   const processLabel = (label) => {
     if (!label.includes('/')) return label;
     const [sharpName, flatName] = label.split('/');
     if (sharp && flat) return label;
     if (sharp) return sharpName;
     if (flat) return flatName;
-    return sharpName; // Fallback (should not be reached)
+    return sharpName;
   };
-
   const chromaticLabels = CHROMATIC_NOTES.map(processLabel);
   const diatonicLabels = DIATONIC_INTERVALS.map(processLabel);
-  
   return { chromaticLabels, diatonicLabels };
 }
 
-// ----- Accidental Button Interaction -----
+function updateResultText() {
+  const { chromaticLabels } = generateDisplayLabels();
+  const { pitchClass, degree, chromatic } = appState.rings;
+
+  const effectivePitchRotation = normAngle(pitchClass - chromatic);
+  const effectiveDegreeRotation = normAngle(degree - chromatic);
+
+  const rootNoteIndex = indexAtTop(effectivePitchRotation);
+  const modeDegreeIndex = indexAtTop(effectiveDegreeRotation);
+  
+  const pitch = chromaticLabels[rootNoteIndex];
+  const tonicInterval = DIATONIC_INTERVALS[modeDegreeIndex];
+  const modeKey = DEGREE_MAP[tonicInterval] || null;
+  const modeName = modeKey ? MODE_NAME[modeKey] : '...';
+  
+  resultText.textContent = `${pitch} ${modeName}`;
+}
+
+
 function handleAccidentalToggle(type) {
   appState.display[type] = !appState.display[type];
-
   if (!appState.display.sharp && !appState.display.flat) {
     const otherType = type === 'sharp' ? 'flat' : 'sharp';
     appState.display[otherType] = true;
   }
+  updateResultText();
 }
 
 flatBtn.addEventListener('click', () => handleAccidentalToggle('flat'));
 sharpBtn.addEventListener('click', () => handleAccidentalToggle('sharp'));
 
-// ----- Interactions -----
-initCanvasInteraction(canvas);
-initBeltInteraction();
+function onInteractionEnd() {
+  updateResultText();
+}
 
-// ----- Render + Belts Update -----
+initCanvasInteraction(canvas, onInteractionEnd);
+initBeltInteraction(onInteractionEnd);
+
 function redraw(){
   const { size } = appState.dimensions;
   if(!size) return;
-
+  
+  const { rings } = appState;
   const { chromaticLabels, diatonicLabels } = generateDisplayLabels();
+  
+  // --- DYNAMIC HIGHLIGHT CALCULATION ---
+  // The highlight pattern is now calculated on every frame for immediate responsiveness.
+  const effectiveDegreeRotation = normAngle(rings.degree - rings.chromatic);
+  const modeIndex = indexAtTop(effectiveDegreeRotation);
+  const tonicInterval = DIATONIC_INTERVALS[modeIndex];
+  const modeKey = DEGREE_MAP[tonicInterval] || null;
+  const highlightPattern = modeKey ? MODE_SCALE_DEGREES[modeKey] : [];
+  // --- END DYNAMIC CALCULATION ---
 
   flatBtn.classList.toggle('active', appState.display.flat);
   sharpBtn.classList.toggle('active', appState.display.sharp);
@@ -74,24 +99,16 @@ function redraw(){
   sharpBtn.setAttribute('aria-pressed', String(appState.display.sharp));
 
   const ctx = canvas.getContext('2d');
-  drawWheel(ctx, size, appState.rings, { chromaticLabels, diatonicLabels });
+  drawWheel(ctx, size, rings, { chromaticLabels, diatonicLabels });
 
   updateBelts(
     diatonicLabels,
     chromaticLabels,
-    [...Array(12).keys()],
-    null,
-    DEGREE_MAP
+    highlightPattern // Pass the dynamically calculated pattern
   );
-
-  const pitch = chromaticLabels[indexAtTop(appState.rings.grey)];
-  const degreeIdx = DIATONIC_DEGREE_INDICES[appState.rings.whiteDiatonic];
-  const originalDegree = DIATONIC_INTERVALS[degreeIdx]; 
-  const mode = MODE_NAME[DEGREE_MAP[originalDegree]];
-  resultText.textContent = pitch + (mode ? ` ${mode}` : '');
+  
+  // Update the result text on every frame as well.
+  updateResultText();
 }
 
 makeRenderLoop(redraw);
-
-// ----- Initialise -----
-settleMode();
