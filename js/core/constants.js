@@ -18,9 +18,7 @@ export const PIANO_KEY_COLOUR = {
     'F♯/G♭':false,'G':true,'G♯/A♭':false,'A':true,'A♯/B♭':false,'B':true
   };
 
-// REMOVED: WHITE_RING_BASE is no longer necessary.
 
-// UPDATED: This map now contains colors for all 12 intervals.
 export const FIXED_INTERVAL_COLOUR = {
     // Diatonic degrees (original colors)
     0:'#f090ae', // 1
