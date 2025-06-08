@@ -13,22 +13,16 @@
 }
 
 :root {
-  /* --- BASE UNIT --- */
   --unit: clamp(0.75px, 0.2vmin, 2px);
-
-  /* --- BORDERS & RADII --- */
   --border-width: var(--unit);
   --border-width-medium: calc(var(--unit) * 1.5);
   --border-width-thick: calc(var(--unit) * 2.5);
   --border-width-cursor: calc(var(--unit) * 3);
-  
   --radius-small: calc(var(--unit) * 5);
   --radius-medium: calc(var(--unit) * 8);
-
-  /* --- SPACING SCALE (Single Source of Truth) --- */
   --space-xs: 0.5vh;
-  --space-s:  .5vh;
-  --space-m:  1vh;
+  --space-s:  1vh;
+  --space-m:  1.5vh;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,7 +51,7 @@ body {
 
 .wheel-container {
   position: relative;
-  width: min(90vw, 85vh); 
+  width: min(90vw, 80vh);
   max-width: 600px;
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
@@ -69,6 +63,7 @@ canvas {
   border-radius: 50%;
   background: #fff;
   border: var(--border-width) solid #ccc;
+  touch-action: none; /* Prevents page scroll when dragging wheel */
 }
 
 #result-container {
@@ -92,7 +87,6 @@ canvas {
   flex-grow: 1;
   text-align: center;
   font-size: clamp(16px, 2.2vmin, 26px);
-  /* ADDED: This stabilizes the vertical alignment of the text. */
   line-height: 1.2;
 }
 
@@ -106,7 +100,7 @@ canvas {
   padding: var(--space-xs) var(--space-s);
   cursor: pointer;
   opacity: 0.4;
-  transition: opacity 0.2s, background-color 0.2s, visibility 0.2s;
+  transition: opacity 0.2s, background-color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -139,11 +133,13 @@ canvas {
 
 .belt {
   height: 6vh;
+  min-height: 40px;
   background: #e0e0e0;
   border-radius: var(--radius-small);
   overflow: hidden;
   position: relative;
   box-shadow: inset 0 0 5px rgba(0,0,0,.1);
+  touch-action: none; /* Prevents page scroll when dragging belts */
 }
 
 .belt-track {
@@ -165,8 +161,10 @@ canvas {
 
 .interval-brackets-container {
   height: calc(6vh * 0.618);
+  min-height: 25px;
   overflow: hidden;
   position: relative;
+  touch-action: none; /* Prevents page scroll when dragging intervals */
 }
 
 .interval-brackets-track {
