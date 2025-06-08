@@ -1,3 +1,4 @@
+// Single RAF driving both animation & redraw
 import { stepAnim } from './animation.js';
 
 export function makeRenderLoop(redraw){
