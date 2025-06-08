@@ -1,138 +1,97 @@
-// js/main.js
-// Main application entry point and orchestrator.
-
-import { appState, initializeState } from './state/appState.js';
-import * as constants from './config/constants.js';
-import { getIndexAtTop } from './utils/helpers.js';
+import { appState } from './state/appState.js';
+import { CHROMATIC_NOTES, DIATONIC_INTERVALS, DIATONIC_DEGREE_INDICES, DEGREE_MAP, MODE_NAME } from './core/constants.js';
 import { drawWheel } from './canvas/drawing.js';
-import { initializeCanvasInteraction } from './canvas/interaction.js';
+import { initCanvasInteraction } from './canvas/interaction.js';
+import { initBeltInteraction } from './belts/interaction.js';
+import { makeRenderLoop } from './core/renderLoop.js';
+import { settleMode } from './core/animation.js';
+import { indexAtTop } from './core/math.js';
 import { updateBelts } from './belts/logic.js';
-import { initializeBeltInteraction } from './belts/interaction.js';
-// **** Import animateChromaticSnap ****
-import { initializeAnimation, animateGreyRing, animateWhiteRing, animateChromaticSnap } from './core/animation.js';
 
-// ===== DOM Elements =====
-let canvas = null;
-let ctx = null;
-let resultDisplay = null;
+// Get references to all relevant elements
+const canvas = document.getElementById('chromaWheel');
+const resultText = document.getElementById('result-text');
+const flatBtn = document.getElementById('flat-btn');
+const sharpBtn = document.getElementById('sharp-btn');
 
-// ===== CORE DRAWING AND UPDATE =====
-function drawCurrentWheel(forceBeltContentUpdate = false) {
-    if (!ctx || !canvas) {
-        console.warn("[drawCurrentWheel] Context or Canvas not available.");
-        return;
-    }
-    const centerX = appState.dimensions.canvasCenterX;
-    const centerY = appState.dimensions.canvasCenterY;
-    const canvasSize = appState.dimensions.canvasSize;
+// ----- Sizing -----
+const ro = new ResizeObserver(entries=>{
+  for(const entry of entries){
+    const {width,height} = entry.contentRect;
+    const size = Math.min(width,height);
+    canvas.width=size; canvas.height=size;
+    appState.dimensions = { size, cx:size/2, cy:size/2 };
+  }
+});
+ro.observe(canvas.parentElement);
 
-    // Draw the canvas wheel, passing all necessary rotations
-    drawWheel(
-        ctx, canvas, centerX, centerY, canvasSize,
-        appState.rings.whiteRotation,
-        appState.rings.greyRotation,
-        appState.rings.chromaticRotation // Pass chromatic rotation
-    );
+// ----- Label Generation Logic -----
+function generateDisplayLabels() {
+  const { sharp, flat } = appState.display;
 
-    // Update HTML belts
-    // console.log("[drawCurrentWheel] Calling updateBelts..."); // Optional detailed log
-    updateBelts(
-        constants.diatonicIntervals,
-        constants.chromaticNotes,
-        constants.chromaticPitchClasses,
-        constants.modeScaleDegrees,
-        constants.degreeMap,
-        forceBeltContentUpdate
-    );
-    // console.log("[drawCurrentWheel] updateBelts call complete."); // Optional detailed log
+  const processLabel = (label) => {
+    if (!label.includes('/')) return label;
+    const [sharpName, flatName] = label.split('/');
+    if (sharp && flat) return label;
+    if (sharp) return sharpName;
+    if (flat) return flatName;
+    return sharpName; // Fallback (should not be reached)
+  };
 
-    updateResult(); // Update the text display
+  const chromaticLabels = CHROMATIC_NOTES.map(processLabel);
+  const diatonicLabels = DIATONIC_INTERVALS.map(processLabel);
+  
+  return { chromaticLabels, diatonicLabels };
 }
 
-// ===== UPDATE RESULT DISPLAY =====
-function updateResult() {
-    if (!resultDisplay) return;
+// ----- Accidental Button Interaction -----
+function handleAccidentalToggle(type) {
+  appState.display[type] = !appState.display[type];
 
-    // Result depends on the FINAL TARGET positions after snapping
-    const pitchIndexAtTop = getIndexAtTop(appState.rings.greyTargetRotation); // Use grey ring target
-    const pitchAtTop = constants.chromaticNotes[pitchIndexAtTop];
-
-    // Mode index is based on the white ring's state
-    const safeDiatonicIndex = Math.max(0, Math.min(appState.rings.whiteDiatonicIndex, constants.diatonicDegreeIndices.length - 1));
-    const degreeIndexValue = constants.diatonicDegreeIndices[safeDiatonicIndex];
-    const degreeAtTop = constants.diatonicIntervals[degreeIndexValue];
-
-    const mappedDegree = constants.degreeMap[degreeAtTop] || '1';
-    const modeName = constants.modeMapping[mappedDegree];
-
-    let combinedResult = pitchAtTop;
-    if (modeName) {
-        combinedResult += ' ' + modeName;
-    }
-    resultDisplay.textContent = combinedResult;
+  if (!appState.display.sharp && !appState.display.flat) {
+    const otherType = type === 'sharp' ? 'flat' : 'sharp';
+    appState.display[otherType] = true;
+  }
 }
 
+flatBtn.addEventListener('click', () => handleAccidentalToggle('flat'));
+sharpBtn.addEventListener('click', () => handleAccidentalToggle('sharp'));
 
-// ===== EVENT HANDLERS =====
-function handleResize() {
-    // **** ADD LOG ****
-    console.log("[handleResize] Function called.");
-    if (!canvas) {
-        console.log("[handleResize] Canvas not found, exiting.");
-        return;
-    }
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    // **** ADD LOG ****
-    console.log(`[handleResize] Canvas dimensions: ${canvas.width}x${canvas.height}`);
+// ----- Interactions -----
+initCanvasInteraction(canvas);
+initBeltInteraction();
 
-    // Update dimensions in state
-    appState.dimensions.canvasSize = Math.min(canvas.width, canvas.height);
-    appState.dimensions.canvasCenterX = canvas.width / 2;
-    appState.dimensions.canvasCenterY = canvas.height / 2;
+// ----- Render + Belts Update -----
+function redraw(){
+  const { size } = appState.dimensions;
+  if(!size) return;
 
-    // console.log(`Resized: New canvas size ${appState.dimensions.canvasSize}x${appState.dimensions.canvasSize}`);
-    // Force content update on resize to recalculate belt widths etc.
-    // **** ADD LOG ****
-    console.log("[handleResize] Calling drawCurrentWheel(true)...");
-    drawCurrentWheel(true);
-    console.log("[handleResize] drawCurrentWheel call complete.");
+  const { chromaticLabels, diatonicLabels } = generateDisplayLabels();
+
+  flatBtn.classList.toggle('active', appState.display.flat);
+  sharpBtn.classList.toggle('active', appState.display.sharp);
+  flatBtn.setAttribute('aria-pressed', String(appState.display.flat));
+  sharpBtn.setAttribute('aria-pressed', String(appState.display.sharp));
+
+  const ctx = canvas.getContext('2d');
+  drawWheel(ctx, size, appState.rings, { chromaticLabels, diatonicLabels });
+
+  updateBelts(
+    diatonicLabels,
+    chromaticLabels,
+    [...Array(12).keys()],
+    null,
+    DEGREE_MAP
+  );
+
+  const pitch = chromaticLabels[indexAtTop(appState.rings.grey)];
+  const degreeIdx = DIATONIC_DEGREE_INDICES[appState.rings.whiteDiatonic];
+  const originalDegree = DIATONIC_INTERVALS[degreeIdx]; 
+  const mode = MODE_NAME[DEGREE_MAP[originalDegree]];
+  resultText.textContent = pitch + (mode ? ` ${mode}` : '');
 }
 
-// ===== INITIALIZATION =====
-function initializeApp() {
-    console.log("Initializing Diatonic Compass...");
+makeRenderLoop(redraw);
 
-    canvas = document.getElementById('chromaWheel');
-    resultDisplay = document.getElementById('result');
-    if (!canvas || !resultDisplay) {
-        console.error("Initialization failed: Canvas or Result element not found.");
-        return;
-     }
-    ctx = canvas.getContext('2d');
-    if (!ctx) {
-        console.error("Initialization failed: Could not get 2D context.");
-        return;
-     }
-
-    initializeState();
-
-    // Setup systems, passing callbacks
-    initializeAnimation(drawCurrentWheel, updateResult); // Animation needs no extra args
-    initializeCanvasInteraction(canvas, drawCurrentWheel, animateGreyRing, animateWhiteRing, updateResult); // Pass individual anim functions
-    initializeBeltInteraction(drawCurrentWheel, animateGreyRing, animateWhiteRing, updateResult); // Pass individual anim functions
-
-    // Use setTimeout to ensure the initial layout is calculated
-    setTimeout(() => {
-        // **** ADD LOG ****
-        console.log("[initializeApp setTimeout] Running initial handleResize...");
-        handleResize(); // This calls drawCurrentWheel(true)
-        console.log("[initializeApp setTimeout] Initial handleResize complete.");
-    }, 100); // Increased delay slightly
-
-    window.addEventListener('resize', handleResize);
-    console.log("Diatonic Compass Initialized (End of initializeApp).");
-}
-
-// ===== START APPLICATION =====
-window.onload = initializeApp;
+// ----- Initialise -----
+settleMode();
