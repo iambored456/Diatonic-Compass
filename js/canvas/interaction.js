@@ -32,6 +32,7 @@ export function initCanvasInteraction(canvas, onInteractionEnd){
     appState.drag.startPitchClass = appState.rings.pitchClass;
     appState.drag.startDegree     = appState.rings.degree;
     appState.drag.startChrom      = appState.rings.chromatic;
+    appState.drag.startHighlight  = appState.rings.highlightPosition;
     
     canvas.setPointerCapture(e.pointerId);
     canvas.style.cursor = 'grabbing';
@@ -50,9 +51,15 @@ export function initCanvasInteraction(canvas, onInteractionEnd){
       } 
       else if (s.active === 'degree') {
         setRingAngle('degree', s.startDegree + deltaAngle);
+        setRingAngle('highlightPosition', s.startHighlight + deltaAngle);
       } 
       else if (s.active === 'chromatic') {
-        coRotateRings(s, deltaAngle);
+        coRotateRings({
+            startPitchClass: s.startPitchClass,
+            startDegree: s.startDegree,
+            startChrom: s.startChrom,
+            startHighlight: s.startHighlight
+        }, deltaAngle);
       }
     } else {
       const { ring } = getPointerInfo(e);
@@ -62,9 +69,9 @@ export function initCanvasInteraction(canvas, onInteractionEnd){
 
   const endDrag = () => {
     if (!appState.drag.active) return;
-    
     const ring = appState.drag.active;
-    appState.drag.active = null;
+    
+    appState.drag.active = null; 
     canvas.style.cursor = 'grab';
 
     if (ring === 'chromatic') { 
@@ -73,7 +80,6 @@ export function initCanvasInteraction(canvas, onInteractionEnd){
     else if (ring === 'pitchClass') { 
       snapRing('pitchClass', onInteractionEnd);
     }
-    // MODIFICATION: Call the new function to snap the degree ring to valid positions.
     else if (ring === 'degree'){ 
       snapDegreeToDiatonic(onInteractionEnd);
     }
