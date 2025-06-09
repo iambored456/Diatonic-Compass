@@ -4,11 +4,11 @@ import { SEMITONES, ANGLE_STEP, FONT_FACTOR, FIXED_INTERVAL_COLOUR, PIANO_KEY_CO
 import { normAngle } from '../core/math.js';
 import { getContrastColor } from '../core/color.js';
 
-export function drawWheel(ctx, size, { pitchClass, degree, chromatic }, { chromaticLabels, diatonicLabels }){
+export function drawWheel(ctx, size, { pitchClass, degree, chromatic }, { chromaticLabels, diatonicLabels }, playbackState){
   ctx.clearRect(0,0,size,size);
   const cx=size/2, cy=size/2;
 
-  drawOuterRing(); drawMiddleRing(); drawInner(); drawLabels(chromaticLabels, diatonicLabels); drawMarker();
+  drawOuterRing(); drawMiddleRing(); drawInner(); drawLabels(chromaticLabels, diatonicLabels); drawPlaybackHighlight(); drawMarker();
 
   function segPath(r0,r1,angle){
     const a0 = angle-ANGLE_STEP/2, a1 = angle+ANGLE_STEP/2;
@@ -66,6 +66,24 @@ export function drawWheel(ctx, size, { pitchClass, degree, chromatic }, { chroma
     });
 
     SEMITONES.forEach(i=> label(i*ANGLE_STEP+chromatic-Math.PI/2,rInner,i.toString(),'#fff'));
+  }
+
+  function drawPlaybackHighlight() {
+    if (!playbackState || !playbackState.isPlaying || playbackState.currentNoteIndex === null) {
+      return;
+    }
+    
+    // MODIFICATION: Use modulo 12 to get the correct VISUAL index (0-11)
+    const visualNoteIndex = playbackState.currentNoteIndex % 12;
+    // The visual angle depends on the pitch ring's rotation
+    const angle = visualNoteIndex * ANGLE_STEP + pitchClass - Math.PI / 2;
+    
+    const r1 = size * 0.5; // Outer radius
+    const r0 = size * 0.2; // Inner radius of middle ring
+
+    segPath(r0, r1, angle);
+    ctx.fillStyle = 'rgba(255, 255, 0, 0.6)'; // Semi-transparent yellow
+    ctx.fill();
   }
 
   function drawMarker(){
