@@ -1,3 +1,5 @@
+/* (file path: style.css) */
+
 @font-face {
   font-family: 'Atkinson Hyperlegible Next';
   src: url('./fonts/AtkinsonHyperlegibleNext-Regular.otf') format('opentype');
@@ -63,7 +65,7 @@ canvas {
   border-radius: 50%;
   background: #fff;
   border: var(--border-width) solid #ccc;
-  touch-action: none; /* Prevents page scroll when dragging wheel */
+  touch-action: none;
 }
 
 #result-container {
@@ -81,6 +83,11 @@ canvas {
   color: #333;
   box-shadow: 0 0 5px rgba(0,0,0,.1);
   flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+
+#result-container.playback-active {
+  background-color: #A5D6A7; /* A pleasant green */
 }
 
 #result-text {
@@ -88,6 +95,8 @@ canvas {
   text-align: center;
   font-size: clamp(16px, 2.2vmin, 26px);
   line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
 }
 
 .accidental-toggle {
@@ -119,6 +128,20 @@ canvas {
   flex-shrink: 0;
 }
 
+#belt-flash-overlay {
+  display: none; /* Hidden by default */
+  position: absolute;
+  top: calc(-1 * var(--border-width-thick));
+  bottom: calc(-1 * var(--border-width-thick));
+  left: 0;
+  width: calc(100% / 12);
+  pointer-events: none;
+  background: rgba(255, 255, 0, 0.5); /* Semi-transparent yellow */
+  border-radius: var(--radius-medium);
+  z-index: 90; /* Below the cursor but above the belts */
+  will-change: transform;
+}
+
 #belt-cursor {
   position: absolute;
   top: calc(-1 * var(--border-width-thick));
@@ -139,7 +162,7 @@ canvas {
   overflow: hidden;
   position: relative;
   box-shadow: inset 0 0 5px rgba(0,0,0,.1);
-  touch-action: none; /* Prevents page scroll when dragging belts */
+  touch-action: none;
 }
 
 .belt-track {
@@ -147,6 +170,21 @@ canvas {
   height: 100%;
   will-change: transform;
   width: 325%;
+}
+
+.chromatic-belt .belt-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#chromatic-numbers-track {
+  mix-blend-mode: difference;
+  pointer-events: all; 
+}
+
+#chromatic-colors-track {
+  pointer-events: none;
 }
 
 .belt-cell {
@@ -157,14 +195,27 @@ canvas {
   font-size: clamp(15px, 2.2vmin, 24px);
   border-right: var(--border-width) solid #ccc;
   user-select: none;
+  line-height: 1;
 }
+
+#chromatic-numbers-track .belt-cell {
+  border-right: none;
+  background: transparent;
+  color: white; 
+  font-weight: bold;
+}
+
+#chromatic-colors-track .belt-cell {
+  border-right: none;
+}
+
 
 .interval-brackets-container {
   height: calc(6vh * 0.618);
   min-height: 25px;
   overflow: hidden;
   position: relative;
-  touch-action: none; /* Prevents page scroll when dragging intervals */
+  touch-action: none;
 }
 
 .interval-brackets-track {
@@ -175,7 +226,7 @@ canvas {
 }
 
 .interval-bracket-cell {
-  flex-shrink:0;
+  flex: 0 0 calc(100% / 39);
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -186,17 +237,20 @@ canvas {
   user-select: none;
 }
 
-.interval-bracket-cell[data-steps="1"] { flex-basis:calc(100%/39*1); }
-.interval-bracket-cell[data-steps="2"] { flex-basis:calc(100%/39*2); }
+.interval-bracket-cell[data-steps="2"] {
+  align-items: flex-end;
+}
 
-.interval-bracket-cell::after {
+.interval-bracket-cell[data-steps]::after {
   content:"";
   position:absolute;
   bottom: var(--space-xs);
   left:5%;
-  right:5%;
   height:40%;
   border: var(--border-width-medium) solid #000;
   border-top:none;
   border-radius:0 0 var(--radius-medium) var(--radius-medium);
 }
+
+.interval-bracket-cell[data-steps="1"]::after { right: 5%; }
+.interval-bracket-cell[data-steps="2"]::after { right: calc(-100% + 5%); }
