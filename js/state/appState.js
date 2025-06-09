@@ -5,7 +5,7 @@ export const appState = {
       pitchClass: 0,
       degree: 0,
       chromatic: 0,
-      // REMOVED: degreeTonicIndex is no longer needed.
+      highlightPosition: 0,
     },
     drag: { 
       active:null, 
@@ -19,10 +19,18 @@ export const appState = {
         itemW:{}, 
         tracks:{}, 
         init:false,
-        // REMOVED: highlightPattern is now calculated dynamically.
     },
     dimensions:{ size:0, cx:0, cy:0 },
     animation: null,
+    playback: {
+      isPlaying: false,
+      currentNoteIndex: null,
+      sequence: [],
+      timeoutId: null,
+      audioContext: null,
+      // MODIFICATION: Add property to store the scale's root note during playback.
+      rootNoteIndexForPlayback: null,
+    },
     display: {
       sharp: true,
       flat: true,
