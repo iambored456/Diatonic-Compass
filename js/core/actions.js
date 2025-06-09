@@ -4,7 +4,7 @@ import { appState } from '../state/appState.js';
 import { normAngle } from './math.js';
 
 /**
- * @param {('pitchClass'|'degree'|'chromatic')} ringKey
+ * @param {('pitchClass'|'degree'|'chromatic'|'highlightPosition')} ringKey
  * @param {number} angle
  */
 export function setRingAngle(ringKey, angle) {
@@ -16,11 +16,12 @@ export function setRingAngle(ringKey, angle) {
 /**
  * Co-rotates all three rings by a given delta. This is used during a drag
  * to provide direct 1:1 visual feedback for all moving parts.
- * @param {object} startAngles - An object like { startPitchClass, startDegree, startChrom }
+ * @param {object} startAngles - An object with startPitchClass, startDegree, startChrom, and startHighlight.
  * @param {number} deltaAngle - The change in angle in radians.
  */
 export function coRotateRings(startAngles, deltaAngle) {
-  appState.rings.pitchClass = normAngle(startAngles.startPitchClass + deltaAngle);
-  appState.rings.degree     = normAngle(startAngles.startDegree + deltaAngle);
-  appState.rings.chromatic  = normAngle(startAngles.startChrom + deltaAngle);
+  appState.rings.pitchClass       = normAngle(startAngles.startPitchClass + deltaAngle);
+  appState.rings.degree           = normAngle(startAngles.startDegree + deltaAngle);
+  appState.rings.chromatic        = normAngle(startAngles.startChrom + deltaAngle);
+  appState.rings.highlightPosition = normAngle(startAngles.startHighlight + deltaAngle);
 }
