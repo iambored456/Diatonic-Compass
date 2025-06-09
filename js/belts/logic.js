@@ -1,88 +1,100 @@
-// (file path: js/belts/interaction.js)
+// (file path: js/canvas/drawing.js)
 
-import { appState } from '../state/appState.js';
-import { ANGLE_STEP } from '../core/constants.js';
-import { snapRing, snapChromaticAndSettleMode, snapDegreeToDiatonic } from '../core/animation.js';
-import { setRingAngle, coRotateRings } from '../core/actions.js';
+import { SEMITONES, ANGLE_STEP, FONT_FACTOR, FIXED_INTERVAL_COLOUR, PIANO_KEY_COLOUR } from '../core/constants.js';
+import { normAngle } from '../core/math.js';
+import { getContrastColor } from '../core/color.js';
 
-function addGenericDragHandler(element, onMove, onFinish) {
-  element.style.cursor = 'grab';
-  let activePointer = null;
-  let startX = 0;
-  let startAngles = {};
+export function drawWheel(ctx, size, { pitchClass, degree, chromatic }, { chromaticLabels, diatonicLabels }, playbackState){
+  ctx.clearRect(0,0,size,size);
+  const cx=size/2, cy=size/2;
 
-  const startDrag = (e) => {
-    activePointer = e.pointerId;
-    element.setPointerCapture(activePointer);
-    startX = e.clientX;
-    startAngles = {
-      pitchClass: appState.rings.pitchClass,
-      degree:     appState.rings.degree,
-      chromatic:  appState.rings.chromatic,
-      highlight:  appState.rings.highlightPosition,
-    };
-    element.style.cursor = 'grabbing';
-    appState.drag.active = element.id || 'unknown';
-  };
+  drawOuterRing(); drawMiddleRing(); drawInner(); drawLabels(chromaticLabels, diatonicLabels); drawPlaybackHighlight(); drawMarker();
 
-  const finishDrag = () => {
-    if (activePointer === null) return;
-    element.releasePointerCapture(activePointer);
-    activePointer = null;
-    element.style.cursor = 'grab';
-    appState.drag.active = null; 
-    onFinish();
-  };
-
-  element.addEventListener('pointerdown', startDrag);
-  element.addEventListener('pointermove', e => {
-    if (activePointer !== e.pointerId) return;
-    const dx = e.clientX - startX;
-    const container = element.closest('.belt, .interval-brackets-container');
-    const cellW = appState.belts.itemW[container.id] || container.offsetWidth / 12;
-    const deltaAngle = (dx / cellW) * ANGLE_STEP;
-    onMove(deltaAngle, startAngles);
-  });
-  element.addEventListener('pointerup', finishDrag);
-  element.addEventListener('pointercancel', finishDrag);
-}
-
-export function initBeltInteraction(onInteractionEnd) {
-  const pitchBelt = document.getElementById('pitchBelt');
-  if (pitchBelt) {
-    addGenericDragHandler(pitchBelt, 
-      (delta, starts) => setRingAngle('pitchClass', starts.pitchClass + delta),
-      () => snapRing('pitchClass', onInteractionEnd)
-    );
+  function segPath(r0,r1,angle){
+    const a0 = angle-ANGLE_STEP/2, a1 = angle+ANGLE_STEP/2;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r1,a0,a1);
+    ctx.arc(cx,cy,r0,a1,a0,true);
+    ctx.closePath();
   }
 
-  const degreeOnMove = (delta, starts) => {
-    setRingAngle('degree', starts.degree + delta);
-    setRingAngle('highlightPosition', starts.highlight + delta);
-  };
-  const degreeOnFinish = () => snapDegreeToDiatonic(onInteractionEnd);
-
-  const degreeBelt = document.getElementById('degreeBelt');
-  if (degreeBelt) {
-    addGenericDragHandler(degreeBelt, degreeOnMove, degreeOnFinish);
+  function drawOuterRing(){
+    const r1=size*0.5, r0=size*0.35;
+    const canonicalNotes = Object.keys(PIANO_KEY_COLOUR);
+    canonicalNotes.forEach((note,i)=>{
+      const ang=i*ANGLE_STEP+pitchClass-Math.PI/2;
+      segPath(r0,r1,ang);
+      ctx.fillStyle = PIANO_KEY_COLOUR[note] ? '#fff' : '#000';
+      ctx.fill();
+      ctx.lineWidth = size * 0.002;
+      ctx.strokeStyle='#000'; ctx.stroke();
+    });
   }
-  const intervalBrackets = document.getElementById('intervalBracketsContainer');
-  if (intervalBrackets) {
-    addGenericDragHandler(intervalBrackets, degreeOnMove, degreeOnFinish);
+
+  function drawMiddleRing(){
+    const r1=size*0.35, r0=size*0.2;
+    for(let i=0;i<12;i++){
+      const ang=i*ANGLE_STEP+degree-Math.PI/2;
+      segPath(r0,r1,ang);
+      ctx.fillStyle = FIXED_INTERVAL_COLOUR[i] || '#e0e0e0';
+      ctx.fill();
+      ctx.lineWidth = size * 0.002;
+      ctx.strokeStyle='#000'; ctx.stroke();
+    }
+  }
+
+  function drawInner(){ ctx.beginPath(); ctx.arc(cx,cy,size*0.2,0,Math.PI*2); ctx.fillStyle='#000'; ctx.fill(); }
+  
+  function label(angle,radius,text,fill){
+    ctx.fillStyle=fill; ctx.font=`${size*FONT_FACTOR}px 'Atkinson Hyperlegible Next'`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(text, cx+Math.cos(angle)*radius, cy+Math.sin(angle)*radius);
   }
   
-  const chromaticBelt = document.getElementById('chromatic-numbers-track');
-  if (chromaticBelt) {
-    addGenericDragHandler(chromaticBelt,
-      (delta, starts) => {
-        coRotateRings({
-            startPitchClass: starts.pitchClass,
-            startDegree: starts.degree,
-            startChrom: starts.chromatic,
-            startHighlight: starts.highlight
-        }, delta)
-      },
-      () => snapChromaticAndSettleMode(onInteractionEnd)
-    );
+  function drawLabels(chromaticNotes, diatonicIntervals){
+    const rOuter=size*0.5*0.85, rMid=size*0.35*0.8, rInner=size*0.2*0.8;
+    const canonicalNotes = Object.keys(PIANO_KEY_COLOUR);
+
+    chromaticNotes.forEach((n,i)=> {
+      const originalNote = canonicalNotes[i];
+      label(i*ANGLE_STEP+pitchClass-Math.PI/2, rOuter, n, PIANO_KEY_COLOUR[originalNote]?'#000':'#fff');
+    });
+
+    diatonicIntervals.forEach((inv,i)=> {
+      const bgColor = FIXED_INTERVAL_COLOUR[i];
+      const textColor = getContrastColor(bgColor); 
+      label(i*ANGLE_STEP+degree-Math.PI/2, rMid, inv, textColor);
+    });
+
+    SEMITONES.forEach(i=> label(i*ANGLE_STEP+chromatic-Math.PI/2,rInner,i.toString(),'#fff'));
+  }
+
+  function drawPlaybackHighlight() {
+    if (!playbackState || !playbackState.isPlaying || playbackState.currentNoteIndex === null) {
+      return;
+    }
+    
+    // MODIFICATION: Use modulo 12 to get the correct VISUAL index (0-11)
+    const visualNoteIndex = playbackState.currentNoteIndex % 12;
+    // The visual angle depends on the pitch ring's rotation
+    const angle = visualNoteIndex * ANGLE_STEP + pitchClass - Math.PI / 2;
+    
+    const r1 = size * 0.5; // Outer radius
+    const r0 = size * 0.2; // Inner radius of middle ring
+
+    segPath(r0, r1, angle);
+    ctx.fillStyle = 'rgba(255, 255, 0, 0.6)'; // Semi-transparent yellow
+    ctx.fill();
+  }
+
+  function drawMarker(){
+    const rOuter=size*0.5, rInner=size*0.125;
+    const base=-Math.PI/2+chromatic, a0=base-ANGLE_STEP/2, a1=base+ANGLE_STEP/2;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a0)*rInner, cy+Math.sin(a0)*rInner);
+    ctx.arc(cx,cy,rOuter,a0,a1);
+    ctx.lineTo(cx+Math.cos(a1)*rInner, cy+Math.sin(a1)*rInner);
+    ctx.arc(cx,cy,rInner,a1,a0,true);
+    ctx.closePath();
+    ctx.lineWidth=size*0.006; ctx.strokeStyle='red'; ctx.stroke();
   }
 }
