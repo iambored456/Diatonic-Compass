@@ -1,182 +1,88 @@
-// (file path: js/belts/logic.js)
+// (file path: js/belts/interaction.js)
 
-import {
-  ANGLE_STEP, FIXED_INTERVAL_COLOUR, CHROMATIC_NOTES, PIANO_KEY_COLOUR,
-  MAJOR_SCALE_INTERVAL_STEPS, MODE_SCALE_DEGREES, DIATONIC_DEGREE_INDICES
-} from '../core/constants.js';
-import { normAngle } from '../core/math.js';
 import { appState } from '../state/appState.js';
-import { getContrastColor } from '../core/color.js';
+import { ANGLE_STEP } from '../core/constants.js';
+import { snapRing, snapChromaticAndSettleMode, snapDegreeToDiatonic } from '../core/animation.js';
+import { setRingAngle, coRotateRings } from '../core/actions.js';
 
-function populateTrack(track, items, reps) {
-  track.innerHTML = '';
-  const numItems = items.length;
-  for (let i = 0; i < (reps * 12) + 3; i++) {
-    const itemIndex = i % numItems;
-    const item = items[itemIndex];
-    const cell = document.createElement('div');
-    cell.className = 'belt-cell';
-    cell.textContent = String(item);
-    cell.dataset.originalIndex = String(itemIndex);
-    track.appendChild(cell);
-  }
-}
+function addGenericDragHandler(element, onMove, onFinish) {
+  element.style.cursor = 'grab';
+  let activePointer = null;
+  let startX = 0;
+  let startAngles = {};
 
-function createTrack(container, items, reps) {
-  const track = document.createElement('div');
-  track.className = 'belt-track';
-  populateTrack(track, items, reps);
-  container.appendChild(track);
-  return track;
-}
+  const startDrag = (e) => {
+    activePointer = e.pointerId;
+    element.setPointerCapture(activePointer);
+    startX = e.clientX;
+    startAngles = {
+      pitchClass: appState.rings.pitchClass,
+      degree:     appState.rings.degree,
+      chromatic:  appState.rings.chromatic,
+      highlight:  appState.rings.highlightPosition,
+    };
+    element.style.cursor = 'grabbing';
+    appState.drag.active = element.id || 'unknown';
+  };
 
-function setupBeltContent(diatonicLabels, chromaticLabels, reps = 3) {
-  const pitchContainer = document.getElementById('pitchBelt');
-  if (pitchContainer) {
-    pitchContainer.innerHTML = '';
-    appState.belts.tracks.pitchBelt = createTrack(pitchContainer, chromaticLabels, reps);
-  }
-  const degreeContainer = document.getElementById('degreeBelt');
-  if (degreeContainer) {
-    degreeContainer.innerHTML = '';
-    appState.belts.tracks.degreeBelt = createTrack(degreeContainer, diatonicLabels, reps);
-  }
-  const colorsTrack = document.getElementById('chromatic-colors-track');
-  if (colorsTrack) {
-    populateTrack(colorsTrack, Array(12).fill(''), reps);
-    appState.belts.tracks.chromaticColors = colorsTrack;
-  }
-  const numbersTrack = document.getElementById('chromatic-numbers-track');
-  if (numbersTrack) {
-    populateTrack(numbersTrack, [...Array(12).keys()], reps);
-    appState.belts.tracks.chromaticNumbers = numbersTrack;
-  }
-}
+  const finishDrag = () => {
+    if (activePointer === null) return;
+    element.releasePointerCapture(activePointer);
+    activePointer = null;
+    element.style.cursor = 'grab';
+    appState.drag.active = null; 
+    onFinish();
+  };
 
-function applyBeltStyles(highlightPattern, diatonicLabels, chromaticLabels) {
-  const pitchCells = appState.belts.tracks.pitchBelt?.querySelectorAll('.belt-cell');
-  pitchCells?.forEach(cell => {
-    const idx = +cell.dataset.originalIndex;
-    const note = CHROMATIC_NOTES[idx];
-    const isWhiteKey = PIANO_KEY_COLOUR[note];
-    cell.style.background = isWhiteKey ? '#fff' : '#000';
-    cell.style.color = isWhiteKey ? '#000' : '#fff';
-    cell.textContent = chromaticLabels[idx];
+  element.addEventListener('pointerdown', startDrag);
+  element.addEventListener('pointermove', e => {
+    if (activePointer !== e.pointerId) return;
+    const dx = e.clientX - startX;
+    const container = element.closest('.belt, .interval-brackets-container');
+    const cellW = appState.belts.itemW[container.id] || container.offsetWidth / 12;
+    const deltaAngle = (dx / cellW) * ANGLE_STEP;
+    onMove(deltaAngle, startAngles);
   });
-  const degreeCells = appState.belts.tracks.degreeBelt?.querySelectorAll('.belt-cell');
-  degreeCells?.forEach(cell => {
-    const idx = +cell.dataset.originalIndex;
-    const bgColor = FIXED_INTERVAL_COLOUR[idx] || '#f0f0f0';
-    cell.style.background = bgColor;
-    cell.style.color = getContrastColor(bgColor);
-    cell.textContent = diatonicLabels[idx];
-  });
-
-  const colorCells = appState.belts.tracks.chromaticColors?.querySelectorAll('.belt-cell');
-  if (colorCells) {
-    colorCells.forEach(cell => {
-      const idx = +cell.dataset.originalIndex;
-      const isActive = highlightPattern.includes(idx);
-      cell.style.background = isActive ? '#4a4a4a' : '#e0e0e0';
-    });
-  }
+  element.addEventListener('pointerup', finishDrag);
+  element.addEventListener('pointercancel', finishDrag);
 }
 
-function updateBeltPosition(track, rotation, cellW) {
-  if (!track || !cellW) return;
-  const offsetSteps = normAngle(-rotation) / ANGLE_STEP;
-  const tx = -((offsetSteps * cellW) % (cellW * 12));
-  track.style.transform = `translateX(${tx}px)`;
-}
-
-function updateIntervalBracketsPosition(degreeRot) {
-  const track = document.querySelector('#intervalBracketsContainer .interval-brackets-track');
-  const cellW = appState.belts.itemW.degreeBelt;
-  if (!track || !cellW) return;
-  
-  const baseOffset = -(cellW * 12); 
-  const offSteps = normAngle(-degreeRot) / ANGLE_STEP;
-  const dynamicOffset = -((offSteps * cellW) % (cellW * 12)) + 0.5 * cellW;
-  const tx = baseOffset + dynamicOffset;
-  track.style.transform = `translateX(${tx}px)`;
-}
-
-function calcWidth(beltId, container) {
-  const w = container.offsetWidth;
-  if (w > 0) {
-    appState.belts.itemW[beltId] = w / 12;
-    return true;
-  }
-  return false;
-}
-
-function updateBeltCursorPosition(chromaticRotation) {
-  const cursor = document.getElementById('belt-cursor');
-  const cellW = appState.belts.itemW.chromaticBelt;
-  if (!cursor || !cellW) return;
-  const offsetSteps = normAngle(chromaticRotation) / ANGLE_STEP;
-  const tx = ((offsetSteps * cellW) % (cellW * 12));
-  cursor.style.transform = `translateX(${tx}px)`;
-}
-
-export function updateBelts(
-  diatonicLabels,
-  chromaticLabels,
-  highlightPattern
-) {
-  if (!appState.belts.init) {
-    setupBeltContent(diatonicLabels, chromaticLabels, 3);
-    
-    const intervalContainer = document.getElementById('intervalBracketsContainer');
-    if (intervalContainer) {
-      intervalContainer.innerHTML = ''; 
-      const track = document.createElement('div');
-      track.className = 'interval-brackets-track';
-      
-      for (let i = 0; i < 12 * 3 + 3; i++) {
-        const originalIndex = i % 12;
-        const majorScaleIndex = DIATONIC_DEGREE_INDICES.indexOf(originalIndex);
-        const cell = document.createElement('div');
-        cell.className = 'interval-bracket-cell';
-        
-        if (majorScaleIndex !== -1) {
-          const steps = MAJOR_SCALE_INTERVAL_STEPS[majorScaleIndex];
-          cell.dataset.steps = steps;
-          cell.textContent = `+${steps}`;
-        }
-        track.appendChild(cell);
-      }
-      intervalContainer.appendChild(track);
-    }
-
-    requestAnimationFrame(() => {
-      const goodWidths =
-        calcWidth('pitchBelt', document.getElementById('pitchBelt')) &&
-        calcWidth('degreeBelt', document.getElementById('degreeBelt')) &&
-        calcWidth('chromaticBelt', document.getElementById('chromaticBelt')) &&
-        calcWidth('intervalBracketsContainer', document.getElementById('intervalBracketsContainer'));
-      if (goodWidths) {
-        appState.belts.init = true;
-      }
-    });
-    return;
+export function initBeltInteraction(onInteractionEnd) {
+  const pitchBelt = document.getElementById('pitchBelt');
+  if (pitchBelt) {
+    addGenericDragHandler(pitchBelt, 
+      (delta, starts) => setRingAngle('pitchClass', starts.pitchClass + delta),
+      () => snapRing('pitchClass', onInteractionEnd)
+    );
   }
 
-  const { pitchClass, degree, chromatic } = appState.rings;
-  const { tracks, itemW } = appState.belts;
+  const degreeOnMove = (delta, starts) => {
+    setRingAngle('degree', starts.degree + delta);
+    setRingAngle('highlightPosition', starts.highlight + delta);
+  };
+  const degreeOnFinish = () => snapDegreeToDiatonic(onInteractionEnd);
+
+  const degreeBelt = document.getElementById('degreeBelt');
+  if (degreeBelt) {
+    addGenericDragHandler(degreeBelt, degreeOnMove, degreeOnFinish);
+  }
+  const intervalBrackets = document.getElementById('intervalBracketsContainer');
+  if (intervalBrackets) {
+    addGenericDragHandler(intervalBrackets, degreeOnMove, degreeOnFinish);
+  }
   
-  applyBeltStyles(highlightPattern, diatonicLabels, chromaticLabels);
-
-  updateBeltPosition(tracks.pitchBelt, pitchClass, itemW.pitchBelt);
-  updateBeltPosition(tracks.degreeBelt, degree, itemW.degreeBelt);
-  updateIntervalBracketsPosition(degree);
-
-  // --- MODIFICATION ---
-  // The color track (highlight pattern) is now transposed by the chromatic
-  // ring's position, aligning the recipe's '0' with the tonic.
-  updateBeltPosition(tracks.chromaticColors, chromatic, itemW.chromaticBelt);
-
-  updateBeltPosition(tracks.chromaticNumbers, chromatic, itemW.chromaticBelt);
-  
-  updateBeltCursorPosition(chromatic);
+  const chromaticBelt = document.getElementById('chromatic-numbers-track');
+  if (chromaticBelt) {
+    addGenericDragHandler(chromaticBelt,
+      (delta, starts) => {
+        coRotateRings({
+            startPitchClass: starts.pitchClass,
+            startDegree: starts.degree,
+            startChrom: starts.chromatic,
+            startHighlight: starts.highlight
+        }, delta)
+      },
+      () => snapChromaticAndSettleMode(onInteractionEnd)
+    );
+  }
 }
