@@ -9,26 +9,61 @@ import { makeRenderLoop } from './core/renderLoop.js';
 import { indexAtTop, normAngle } from './core/math.js';
 import { updateBelts, updatePlaybackFlash } from './belts/logic.js';
 import { startPlayback, stopPlayback } from './playback.js';
-// MODIFICATION: Removed the unnecessary import that was causing the error.
 
+const mainContainer = document.querySelector('.main-container');
 const canvas = document.getElementById('chromaWheel');
 const resultContainer = document.getElementById('result-container');
 const resultText = document.getElementById('result-text');
 const flatBtn = document.getElementById('flat-btn');
 const sharpBtn = document.getElementById('sharp-btn');
 
-const ro = new ResizeObserver(entries=>{
-  for(const entry of entries){
-    const {width,height} = entry.contentRect;
-    const size = Math.min(width,height);
+// --- START: RESIZING LOGIC REVISION ---
 
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    appState.dimensions = { size, cx:size/2, cy:size/2, dpr };
+// 1. Define the app's "design" resolution.
+const DESIGN_WIDTH = 800;
+const DESIGN_HEIGHT = 950;
+const CANVAS_DESIGN_SIZE = 600; // The canvas size within the design resolution.
+
+// 2. Set the canvas buffer size once to its fixed design size.
+const dpr = window.devicePixelRatio || 1;
+canvas.width = CANVAS_DESIGN_SIZE * dpr;
+canvas.height = CANVAS_DESIGN_SIZE * dpr;
+
+// 3. Store these fixed dimensions in the app state.
+appState.dimensions = {
+  size: CANVAS_DESIGN_SIZE,
+  cx: CANVAS_DESIGN_SIZE / 2,
+  cy: CANVAS_DESIGN_SIZE / 2,
+  dpr: dpr,
+  scale: 1,
+};
+
+// 4. Create a ResizeObserver to scale the entire app.
+const ro = new ResizeObserver(entries => {
+  for (const entry of entries) {
+    const { width: viewportWidth, height: viewportHeight } = entry.contentRect;
+
+    // Calculate scale factors based on the design resolution
+    const scaleX = viewportWidth / DESIGN_WIDTH;
+    const scaleY = viewportHeight / DESIGN_HEIGHT;
+
+    // Use the smaller scale factor to ensure the app fits without cropping
+    const scale = Math.min(scaleX, scaleY);
+
+    // Store the scale factor for other parts of the app (e.g., interaction)
+    appState.dimensions.scale = scale;
+
+    // Apply the scale transform to the main container
+    if (mainContainer) {
+      mainContainer.style.transform = `scale(${scale})`;
+    }
   }
 });
-ro.observe(canvas.parentElement);
+
+// Observe the body to get the full viewport dimensions.
+ro.observe(document.body);
+
+// --- END: RESIZING LOGIC REVISION ---
 
 function generateDisplayLabels() {
   const { sharp, flat } = appState.display;
