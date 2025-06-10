@@ -20,7 +20,7 @@ export const appState = {
         tracks:{}, 
         init:false,
     },
-    dimensions:{ size:0, cx:0, cy:0 },
+    dimensions:{ size:0, cx:0, cy:0, dpr: 1, scale: 1 },
     animation: null,
     playback: {
       isPlaying: false,
