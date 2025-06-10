@@ -54,6 +54,11 @@ export const FONT_FACTOR = 0.042;
   
 export const ANIM_MS = 300;
 
+export const CANVAS_GUTTER_FACTOR = 0.02;
+
+// MODIFICATION: Add threshold for stacking text in belts.
+export const BELT_TEXT_STACK_THRESHOLD = 45; // in pixels
+
 export const PLAYBACK_NOTE_DURATION_MS = 250;
 export const PLAYBACK_PAUSE_MS = 50;
 export const BASE_NOTE_FREQUENCY = 261.63; // C4
