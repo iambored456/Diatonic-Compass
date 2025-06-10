@@ -61,7 +61,6 @@ function applyBeltStyles(highlightPattern, diatonicLabels, chromaticLabels) {
     const isWhiteKey = PIANO_KEY_COLOUR[note];
     cell.style.background = isWhiteKey ? '#fff' : '#000';
     cell.style.color = isWhiteKey ? '#000' : '#fff';
-    // MODIFICATION: Use innerHTML to render stacked text.
     cell.innerHTML = chromaticLabels[idx];
   });
   const degreeCells = appState.belts.tracks.degreeBelt?.querySelectorAll('.belt-cell');
@@ -70,7 +69,6 @@ function applyBeltStyles(highlightPattern, diatonicLabels, chromaticLabels) {
     const bgColor = FIXED_INTERVAL_COLOUR[idx] || '#f0f0f0';
     cell.style.background = bgColor;
     cell.style.color = getContrastColor(bgColor);
-    // MODIFICATION: Use innerHTML to render stacked text.
     cell.innerHTML = diatonicLabels[idx];
   });
 
@@ -95,12 +93,12 @@ function applyBeltStyles(highlightPattern, diatonicLabels, chromaticLabels) {
         const colorIndex = Math.round(effectiveColorIndex) % 12; 
 
         const isOverActiveBg = highlightPattern.includes(colorIndex);
-        cell.style.color = isOverActiveBg ? 'darkgray' : 'white';
+        // MODIFICATION: Change active text to black for better contrast.
+        cell.style.color = isOverActiveBg ? 'black' : 'white';
     });
   }
 }
 
-// ... (rest of the file is unchanged) ...
 export function updateBeltPosition(track, rotation, cellW) {
   if (!track || !cellW) return;
   const offsetSteps = normAngle(-rotation) / ANGLE_STEP;
@@ -179,7 +177,6 @@ export function updateBelts(
         
         if (majorScaleIndex !== -1) {
           const steps = MAJOR_SCALE_INTERVAL_STEPS[majorScaleIndex];
-          cell.dataset.steps = steps;
           cell.innerHTML = `+${steps}`;
         }
         track.appendChild(cell);
