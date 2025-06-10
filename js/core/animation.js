@@ -47,20 +47,35 @@ export function snapRing(ringKey, onComplete){
   startSnap({ [ringKey]: target }, onComplete);
 }
 
+// MODIFICATION: Function added back in.
+export function snapTransposeRings(onComplete) {
+  const { pitchClass, degree } = appState.rings;
+  
+  const pitchIdx = Math.round(-pitchClass / ANGLE_STEP);
+  const targetPitchClass = normAngle(-pitchIdx * ANGLE_STEP);
+  
+  const snapDelta = angleDiff(pitchClass, targetPitchClass);
+  
+  const targetDegree = normAngle(degree + snapDelta);
+  
+  startSnap({
+    pitchClass: targetPitchClass,
+    degree: targetDegree,
+    highlightPosition: targetDegree
+  }, onComplete);
+}
+
+
 export function snapDegreeToDiatonic(onComplete) {
   const { degree, chromatic } = appState.rings;
   const effectiveDegreeRotation = normAngle(degree - chromatic);
 
-  // Use a floating-point index for a more accurate distance calculation,
-  // rather than rounding to an integer upfront.
   const currentRelativeIndexFloat = normAngle(-effectiveDegreeRotation) / ANGLE_STEP;
 
-  // Find the closest diatonic index to the current float position.
   let closestDiatonicIndex = DIATONIC_DEGREE_INDICES[0];
   let minDiff = Infinity;
 
   DIATONIC_DEGREE_INDICES.forEach(validIndex => {
-    // Calculate the shortest distance on a circular 12-unit number line.
     const diff = Math.abs(currentRelativeIndexFloat - validIndex);
     const circularDiff = Math.min(diff, 12 - diff);
 
@@ -70,13 +85,9 @@ export function snapDegreeToDiatonic(onComplete) {
     }
   });
 
-  // Calculate the final target angle based on the truly closest diatonic index.
   const targetEffectiveRotation = normAngle(-closestDiatonicIndex * ANGLE_STEP);
   const targetDegree = normAngle(targetEffectiveRotation + chromatic);
   
-  // Both the degree ring and its highlight MUST snap to the same final diatonic
-  // position to maintain a consistent and logical state. The animation will
-  // proceed smoothly from the dropped position to this target.
   startSnap({ 
     degree: targetDegree, 
     highlightPosition: targetDegree 
@@ -94,9 +105,6 @@ export function snapChromaticAndSettleMode(onComplete) {
   const effectiveDegreeRotation = normAngle(appState.rings.degree - appState.rings.chromatic);
   const targetDegree = normAngle(effectiveDegreeRotation + targetChrom);
 
-  // --- FIX ---
-  // For consistency, the highlight layer should ALWAYS snap to the final
-  // position of the degree ring.
   startSnap({
     pitchClass: targetPitchClass,
     degree: targetDegree,
