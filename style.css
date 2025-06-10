@@ -48,24 +48,15 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-}
-
-/* MODIFICATION: New styles for the scaler */
-.app-scaler {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 1.5vh;
-  /* Set a responsive size for the entire block */
-  width: min(95vw, 55vh);
-  /* Use max-width for the desktop view */
-  max-width: 600px;
 }
 
 .wheel-container {
   position: relative;
-  /* MODIFICATION: Width is now 100% of its parent scaler */
-  width: 100%;
+  /* MODIFICATION: Let flexbox control the height. The width will follow. */
+  /* We set a max-height to define its size on large screens. */
+  max-height: 80vh;
+  max-width: 90vw;
   aspect-ratio: 1 / 1;
 }
 
@@ -83,8 +74,9 @@ canvas {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-s);
-  /* MODIFICATION: Width is relative to its parent scaler */
-  width: 70%;
+  /* MODIFICATION: Width is 100% of the parent's available space */
+  width: 100%;
+  /* MODIFICATION: Constrain width relative to the wheel's constraints */
   max-width: 350px;
   min-height: 3em;
   padding: var(--space-xs) var(--space-s);
@@ -92,6 +84,8 @@ canvas {
   background: #fff;
   color: #333;
   box-shadow: 0 0 5px rgba(0,0,0,.1);
+  /* MODIFICATION: Allow this to shrink slightly if needed */
+  flex-shrink: 1;
   transition: background-color 0.2s;
 }
 
@@ -128,13 +122,16 @@ canvas {
 }
 
 .belts-container {
-  /* MODIFICATION: Width is now 100% of its parent scaler */
+  /* MODIFICATION: Width is 100% of the parent's available space */
   width: 100%;
+  /* MODIFICATION: Constrain width relative to the wheel's constraints */
   max-width: 800px;
   display: flex;
   flex-direction: column;
   gap: 1vh;
   position: relative;
+  /* MODIFICATION: Allow this to shrink slightly if needed */
+  flex-shrink: 1;
 }
 
 #belt-flash-overlay, #belt-cursor {
@@ -159,9 +156,7 @@ canvas {
 
 
 .belt {
-  /* MODIFICATION: Height is now a percentage of its container's width,
-     which is tied to the main scaler. This maintains aspect ratio. */
-  height: 8%;
+  height: 6vh;
   min-height: 40px;
   background: #e0e0e0;
   border-radius: var(--radius-small);
@@ -218,8 +213,7 @@ canvas {
 
 
 .interval-brackets-container {
-  /* MODIFICATION: Height is also a percentage of container width. */
-  height: 5%;
+  height: 3vh;
   min-height: 25px;
   overflow: hidden;
   position: relative;
