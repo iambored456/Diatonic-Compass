@@ -15,58 +15,57 @@
 }
 
 :root {
-  --unit: clamp(0.75px, 0.2vmin, 2px);
+  /* MODIFICATION: Use fixed pixel units for the design resolution. */
+  --unit: 1px;
   --border-width: var(--unit);
   --border-width-medium: calc(var(--unit) * 1.5);
   --border-width-thick: calc(var(--unit) * 2.5);
   --border-width-cursor: calc(var(--unit) * 3);
-  --radius-small: calc(var(--unit) * 5);
-  --radius-medium: calc(var(--unit) * 8);
-  --space-xs: 0.5vh;
-  --space-s:  1vh;
-  --space-m:  1.5vh;
+  --radius-small: 5px;
+  --radius-medium: 8px;
+  --space-xs: 8px;
+  --space-s:  15px;
+  --space-m:  20px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
   height: 100%;
+  width: 100%;
   overflow: hidden; 
 }
 
 body {
   display: flex;
+  /* MODIFICATION: Center the main container in the viewport. */
+  justify-content: center;
+  align-items: center;
   background: #f5f5f5;
   font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
 }
 
 .main-container {
-  flex: 1;
-  width: 100%;
+  /* MODIFICATION: Define a fixed size for the app. Scaling is handled by JS. */
+  width: 800px;
+  height: 950px;
+  transform-origin: center center; /* Scale from the center */
+
   padding: var(--space-m);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-}
-
-/* MODIFICATION: New styles for the scaler */
-.app-scaler {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5vh;
-  /* Set a responsive size for the entire block */
-  width: min(95vw, 55vh);
-  /* Use max-width for the desktop view */
-  max-width: 600px;
+  /* CHANGE THIS LINE: from flex-start to center */
+  justify-content: center; /* This will vertically center the content block */
+  gap: var(--space-m);
 }
 
 .wheel-container {
   position: relative;
-  /* MODIFICATION: Width is now 100% of its parent scaler */
-  width: 100%;
+  /* MODIFICATION: Fixed size within the main container. */
+  width: 600px;
   aspect-ratio: 1 / 1;
+  flex-shrink: 0;
 }
 
 canvas {
@@ -83,26 +82,28 @@ canvas {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-s);
-  /* MODIFICATION: Width is relative to its parent scaler */
-  width: 70%;
-  max-width: 350px;
-  min-height: 3em;
+  width: 100%;
+  /* MODIFICATION: Fixed dimensions. */
+  max-width: 450px;
+  height: 60px;
   padding: var(--space-xs) var(--space-s);
   border-radius: var(--radius-small);
   background: #fff;
   color: #333;
   box-shadow: 0 0 5px rgba(0,0,0,.1);
+  flex-shrink: 0;
   transition: background-color 0.2s;
 }
 
 #result-container.playback-active {
-  background-color: #A5D6A7;
+  background-color: #A5D6A7; /* A pleasant green */
 }
 
 #result-text {
   flex-grow: 1;
   text-align: center;
-  font-size: clamp(16px, 2.2vmin, 26px);
+  /* MODIFICATION: Fixed font-size. */
+  font-size: 24px;
   line-height: 1.2;
   cursor: pointer;
   user-select: none;
@@ -112,7 +113,8 @@ canvas {
   background: #e0e0e0;
   border: var(--border-width) solid #ccc;
   color: #333;
-  font-size: clamp(18px, 2.8vmin, 28px);
+  /* MODIFICATION: Fixed font-size. */
+  font-size: 26px;
   font-weight: bold;
   border-radius: var(--radius-small);
   padding: var(--space-xs) var(--space-s);
@@ -128,41 +130,45 @@ canvas {
 }
 
 .belts-container {
-  /* MODIFICATION: Width is now 100% of its parent scaler */
   width: 100%;
-  max-width: 800px;
+  /* MODIFICATION: Fixed width. */
+  max-width: 750px;
   display: flex;
   flex-direction: column;
-  gap: 1vh;
+  gap: var(--space-s);
   position: relative;
+  flex-shrink: 0;
 }
 
-#belt-flash-overlay, #belt-cursor {
+#belt-flash-overlay {
+  display: none; /* Hidden by default */
   position: absolute;
   top: calc(-1 * var(--border-width-thick));
   bottom: calc(-1 * var(--border-width-thick));
   left: 0;
   width: calc(100% / 12);
   pointer-events: none;
+  background: rgba(255, 255, 0, 0.5); /* Semi-transparent yellow */
   border-radius: var(--radius-medium);
-  z-index: 100;
+  z-index: 90; /* Below the cursor but above the belts */
   will-change: transform;
 }
-#belt-flash-overlay {
-  display: none;
-  background: rgba(255, 255, 0, 0.5);
-  z-index: 90;
-}
-#belt-cursor {
-  border: var(--border-width-cursor) solid red;
-}
 
+#belt-cursor {
+  position: absolute;
+  top: calc(-1 * var(--border-width-thick));
+  bottom: calc(-1 * var(--border-width-thick));
+  left: 0;
+  width: calc(100% / 12);
+  pointer-events: none;
+  border: var(--border-width-cursor) solid red;
+  border-radius: var(--radius-medium);
+  z-index: 100;
+}
 
 .belt {
-  /* MODIFICATION: Height is now a percentage of its container's width,
-     which is tied to the main scaler. This maintains aspect ratio. */
-  height: 8%;
-  min-height: 40px;
+  /* MODIFICATION: Fixed height. */
+  height: 50px;
   background: #e0e0e0;
   border-radius: var(--radius-small);
   overflow: hidden;
@@ -197,7 +203,8 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(14px, 2.2vmin, 24px);
+  /* MODIFICATION: Fixed font-size. */
+  font-size: 22px;
   border-right: var(--border-width) solid #ccc;
   user-select: none;
   line-height: 1.1;
@@ -208,7 +215,7 @@ canvas {
 #chromatic-numbers-track .belt-cell {
   border-right: none;
   background: transparent;
-  color: white; 
+  /* MODIFICATION: The 'color' property is removed to allow JS to control it dynamically. */
   font-weight: bold;
 }
 
@@ -218,9 +225,8 @@ canvas {
 
 
 .interval-brackets-container {
-  /* MODIFICATION: Height is also a percentage of container width. */
-  height: 5%;
-  min-height: 25px;
+  /* MODIFICATION: Fixed height. */
+  height: 30px;
   overflow: hidden;
   position: relative;
   touch-action: none;
@@ -239,7 +245,8 @@ canvas {
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  font-size: clamp(12px, 1.8vmin, 22px);
+  /* MODIFICATION: Fixed font-size. */
+  font-size: 20px;
   padding: 0;
   position:relative;
   user-select: none;
