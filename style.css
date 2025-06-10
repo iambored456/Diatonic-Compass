@@ -195,7 +195,9 @@ canvas {
   font-size: clamp(15px, 2.2vmin, 24px);
   border-right: var(--border-width) solid #ccc;
   user-select: none;
-  line-height: 1;
+  line-height: 1.1;
+  text-align: center;
+  overflow: hidden;
 }
 
 #chromatic-numbers-track .belt-cell {
@@ -230,21 +232,17 @@ canvas {
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:center;
   font-size:clamp(12px, 1.8vmin, 22px);
-  padding-top: var(--space-xs);
+  padding: 0;
   position:relative;
   user-select: none;
-}
-
-.interval-bracket-cell[data-steps="2"] {
-  align-items: flex-end;
 }
 
 .interval-bracket-cell[data-steps]::after {
   content:"";
   position:absolute;
-  bottom: var(--space-xs);
+  bottom: 2px;
   left:5%;
   height:40%;
   border: var(--border-width-medium) solid #000;
