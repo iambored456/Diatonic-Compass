@@ -4,11 +4,16 @@ import { SEMITONES, ANGLE_STEP, FONT_FACTOR, FIXED_INTERVAL_COLOUR, PIANO_KEY_CO
 import { normAngle } from '../core/math.js';
 import { getContrastColor } from '../core/color.js';
 
-export function drawWheel(ctx, size, { pitchClass, degree, chromatic }, { chromaticLabels, diatonicLabels }, playbackState){
+// MODIFICATION: Accept `dpr` (devicePixelRatio) for scaling.
+export function drawWheel(ctx, size, dpr, { pitchClass, degree, chromatic }, { chromaticLabels, diatonicLabels }, playbackState){
+  ctx.save();
+  ctx.scale(dpr, dpr); // Scale the canvas context for HiDPI rendering.
   ctx.clearRect(0,0,size,size);
   const cx=size/2, cy=size/2;
 
   drawOuterRing(); drawMiddleRing(); drawInner(); drawLabels(chromaticLabels, diatonicLabels); drawPlaybackHighlight(); drawMarker();
+  
+  ctx.restore(); // Restore context to prevent scaling from affecting other operations.
 
   function segPath(r0,r1,angle){
     const a0 = angle-ANGLE_STEP/2, a1 = angle+ANGLE_STEP/2;
@@ -55,14 +60,17 @@ export function drawWheel(ctx, size, { pitchClass, degree, chromatic }, { chroma
     const canonicalNotes = Object.keys(PIANO_KEY_COLOUR);
 
     chromaticNotes.forEach((n,i)=> {
-      const originalNote = canonicalNotes[i];
-      label(i*ANGLE_STEP+pitchClass-Math.PI/2, rOuter, n, PIANO_KEY_COLOUR[originalNote]?'#000':'#fff');
+        const originalNote = canonicalNotes[i];
+        // For canvas text, we don't want HTML, so split it back if needed.
+        const textToDraw = String(n).replace('<br>', '/');
+        label(i*ANGLE_STEP+pitchClass-Math.PI/2, rOuter, textToDraw, PIANO_KEY_COLOUR[originalNote]?'#000':'#fff');
     });
 
     diatonicIntervals.forEach((inv,i)=> {
-      const bgColor = FIXED_INTERVAL_COLOUR[i];
-      const textColor = getContrastColor(bgColor); 
-      label(i*ANGLE_STEP+degree-Math.PI/2, rMid, inv, textColor);
+        const bgColor = FIXED_INTERVAL_COLOUR[i];
+        const textColor = getContrastColor(bgColor); 
+        const textToDraw = String(inv).replace('<br>', '/');
+        label(i*ANGLE_STEP+degree-Math.PI/2, rMid, textToDraw, textColor);
     });
 
     SEMITONES.forEach(i=> label(i*ANGLE_STEP+chromatic-Math.PI/2,rInner,i.toString(),'#fff'));
@@ -73,16 +81,14 @@ export function drawWheel(ctx, size, { pitchClass, degree, chromatic }, { chroma
       return;
     }
     
-    // MODIFICATION: Use modulo 12 to get the correct VISUAL index (0-11)
     const visualNoteIndex = playbackState.currentNoteIndex % 12;
-    // The visual angle depends on the pitch ring's rotation
     const angle = visualNoteIndex * ANGLE_STEP + pitchClass - Math.PI / 2;
     
-    const r1 = size * 0.5; // Outer radius
-    const r0 = size * 0.2; // Inner radius of middle ring
+    const r1 = size * 0.5;
+    const r0 = size * 0.2;
 
     segPath(r0, r1, angle);
-    ctx.fillStyle = 'rgba(255, 255, 0, 0.6)'; // Semi-transparent yellow
+    ctx.fillStyle = 'rgba(255, 255, 0, 0.6)';
     ctx.fill();
   }
 
