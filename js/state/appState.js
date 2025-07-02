@@ -13,12 +13,16 @@ export const appState = {
       startY:0, 
       startPitchClass:0,
       startDegree:0,
-      startChrom:0 
+      startChrom:0,
+      startHighlight:0
     },
     belts:{ 
-        itemW:{}, 
+        // REFACTOR: 'itemW' is now 'itemSize' to be orientation-agnostic.
+        itemSize:{}, 
         tracks:{}, 
         init:false,
+        // REFACTOR: Added orientation state for future vertical/horizontal switching.
+        orientation: 'horizontal'
     },
     dimensions:{ size:0, cx:0, cy:0, dpr: 1, scale: 1 },
     animation: null,

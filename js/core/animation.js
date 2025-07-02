@@ -18,6 +18,8 @@ export function startSnap(targets, onComplete = null){
     toChrom:      targets.chromatic  ?? from.fromChrom,
     toHighlight:  targets.highlightPosition ?? from.fromHighlight
   };
+  // LOG: Log the start of a snap animation.
+  console.log('[Animation] Starting snap.', { from, to });
   appState.animation = { t0, from, to, onComplete };
 }
 
@@ -34,6 +36,8 @@ export function stepAnim(time){
   appState.rings.highlightPosition = apply(anim.from.fromHighlight,  anim.to.toHighlight);
 
   if (p === 1) { 
+    // LOG: Log the completion of a snap animation.
+    console.log('[Animation] Snap completed.');
     if (anim.onComplete) anim.onComplete();
     appState.animation = null; 
   }
@@ -41,6 +45,8 @@ export function stepAnim(time){
 }
 
 export function snapRing(ringKey, onComplete){
+  // LOG: Log which ring is being snapped.
+  console.log(`[Animation] Snapping ring: ${ringKey}`);
   const start = appState.rings[ringKey];
   const idx   = Math.round(-start/ANGLE_STEP);
   const target = normAngle(-idx*ANGLE_STEP);
@@ -49,6 +55,8 @@ export function snapRing(ringKey, onComplete){
 
 // MODIFICATION: Function added back in.
 export function snapTransposeRings(onComplete) {
+  // LOG: Log transpose snap.
+  console.log('[Animation] Snapping for transpose.');
   const { pitchClass, degree } = appState.rings;
   
   const pitchIdx = Math.round(-pitchClass / ANGLE_STEP);
@@ -67,6 +75,8 @@ export function snapTransposeRings(onComplete) {
 
 
 export function snapDegreeToDiatonic(onComplete) {
+  // LOG: Log diatonic snap.
+  console.log('[Animation] Snapping degree ring to nearest diatonic interval.');
   const { degree, chromatic } = appState.rings;
   const effectiveDegreeRotation = normAngle(degree - chromatic);
 
@@ -96,6 +106,8 @@ export function snapDegreeToDiatonic(onComplete) {
 
 
 export function snapChromaticAndSettleMode(onComplete) {
+  // LOG: Log co-rotation snap.
+  console.log('[Animation] Snapping all rings after chromatic drag.');
   const chromIdx = Math.round(-appState.rings.chromatic / ANGLE_STEP);
   const targetChrom = normAngle(-chromIdx * ANGLE_STEP);
 

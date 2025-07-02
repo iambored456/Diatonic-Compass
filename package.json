@@ -1,0 +1,29 @@
+{
+  "name": "diatonic-compass",
+  "version": "1.0.0",
+  "description": "Live Link: https://iambored456.github.io/Diatonic-Compass/",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iambored456/Diatonic-Compass.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/iambored456/Diatonic-Compass/issues"
+  },
+  "homepage": "https://github.com/iambored456/Diatonic-Compass#readme",
+  "dependencies": {
+    "tonal": "^6.4.2",
+    "tone": "^15.1.22",
+    "vite": "^6.3.5"
+  }
+}

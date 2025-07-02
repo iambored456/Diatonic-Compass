@@ -4,11 +4,13 @@ import { appState } from './state/appState.js';
 import { CHROMATIC_NOTES, DIATONIC_INTERVALS, DEGREE_MAP, MODE_NAME, DIATONIC_DEGREE_INDICES, BELT_TEXT_STACK_THRESHOLD } from './core/constants.js';
 import { drawWheel } from './canvas/drawing.js';
 import { initCanvasInteraction } from './canvas/interaction.js';
-import { initBeltInteraction } from './belts/interaction.js';
+import { initBeltInteraction } from './components/belts/interaction.js';
 import { makeRenderLoop } from './core/renderLoop.js';
 import { indexAtTop, normAngle } from './core/math.js';
-import { updateBelts, updatePlaybackFlash } from './belts/logic.js';
+import { updateBelts, updatePlaybackFlash } from './components/belts/logic.js';
 import { startPlayback, stopPlayback } from './playback.js';
+
+console.log("Diatonic Compass Initializing...");
 
 const mainContainer = document.querySelector('.main-container');
 const canvas = document.getElementById('chromaWheel');
@@ -16,72 +18,33 @@ const resultContainer = document.getElementById('result-container');
 const resultText = document.getElementById('result-text');
 const flatBtn = document.getElementById('flat-btn');
 const sharpBtn = document.getElementById('sharp-btn');
+const settingsBtn = document.getElementById('settings-btn');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const toggleOrientationBtn = document.getElementById('toggle-orientation-btn');
 
-// --- START: RESIZING LOGIC REVISION ---
-
-// 1. Define the app's "design" resolution.
-const DESIGN_WIDTH = 800;
-const DESIGN_HEIGHT = 950;
-const CANVAS_DESIGN_SIZE = 600; // The canvas size within the design resolution.
-
-// 2. Set the canvas buffer size once to its fixed design size.
-const dpr = window.devicePixelRatio || 1;
-canvas.width = CANVAS_DESIGN_SIZE * dpr;
-canvas.height = CANVAS_DESIGN_SIZE * dpr;
-
-// 3. Store these fixed dimensions in the app state.
 appState.dimensions = {
-  size: CANVAS_DESIGN_SIZE,
-  cx: CANVAS_DESIGN_SIZE / 2,
-  cy: CANVAS_DESIGN_SIZE / 2,
-  dpr: dpr,
-  scale: 1,
+  size: 0,
+  cx: 0,
+  cy: 0,
+  dpr: window.devicePixelRatio || 1,
 };
-
-// 4. Create a ResizeObserver to scale the entire app.
-const ro = new ResizeObserver(entries => {
-  for (const entry of entries) {
-    const { width: viewportWidth, height: viewportHeight } = entry.contentRect;
-
-    // Calculate scale factors based on the design resolution
-    const scaleX = viewportWidth / DESIGN_WIDTH;
-    const scaleY = viewportHeight / DESIGN_HEIGHT;
-
-    // Use the smaller scale factor to ensure the app fits without cropping
-    const scale = Math.min(scaleX, scaleY);
-
-    // Store the scale factor for other parts of the app (e.g., interaction)
-    appState.dimensions.scale = scale;
-
-    // Apply the scale transform to the main container
-    if (mainContainer) {
-      mainContainer.style.transform = `scale(${scale})`;
-    }
-  }
-});
-
-// Observe the body to get the full viewport dimensions.
-ro.observe(document.body);
-
-// --- END: RESIZING LOGIC REVISION ---
 
 function generateDisplayLabels() {
   const { sharp, flat } = appState.display;
-
-  const cellW = appState.belts.itemW.pitchBelt || 0;
-  const useStacked = cellW > 0 && cellW < BELT_TEXT_STACK_THRESHOLD;
+  const { orientation, itemSize } = appState.belts;
+  const cellW = itemSize.pitchBelt || 0;
+  const useStacked = (orientation === 'vertical') || (cellW > 0 && cellW < BELT_TEXT_STACK_THRESHOLD);
 
   const processLabel = (label) => {
     if (!label.includes('/')) return label;
     const [sharpName, flatName] = label.split('/');
-
     if (useStacked) {
         if (sharp && flat) return `${sharpName}<br>${flatName}`;
         if (sharp) return sharpName;
         if (flat) return flatName;
         return `${sharpName}<br>${flatName}`;
     }
-    
     if (sharp && flat) return label;
     if (sharp) return sharpName;
     if (flat) return flatName;
@@ -117,9 +80,11 @@ function updateResultText() {
   const modeKey = DEGREE_MAP[tonicInterval] || null;
   const modeName = modeKey ? MODE_NAME[modeKey] : '...';
   
-  resultText.textContent = `${pitch} ${modeName}`;
+  const newResult = `${pitch} ${modeName}`;
+  if (resultText.textContent !== newResult) {
+      resultText.textContent = newResult;
+  }
 }
-
 
 function handleAccidentalToggle(type) {
   appState.display[type] = !appState.display[type];
@@ -132,7 +97,6 @@ function handleAccidentalToggle(type) {
 
 resultContainer.addEventListener('click', (e) => {
   if (e.target.closest('button')) return;
-
   if (appState.playback.isPlaying) {
     stopPlayback();
   } else if (!appState.drag.active && !appState.animation) {
@@ -147,10 +111,79 @@ function onInteractionEnd() {
   updateResultText();
 }
 
+function openSidebar() {
+  sidebar.classList.add('open');
+  sidebar.setAttribute('aria-hidden', 'false');
+  sidebarOverlay.classList.add('visible');
+  settingsBtn.setAttribute('aria-expanded', 'true');
+}
+
+function closeSidebar() {
+  settingsBtn.focus(); 
+  sidebar.classList.remove('open');
+  sidebar.setAttribute('aria-hidden', 'true');
+  sidebarOverlay.classList.remove('visible');
+  settingsBtn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleOrientation() {
+    console.log('[Main] Toggling belt orientation.');
+    const newOrientation = appState.belts.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+    appState.belts.orientation = newOrientation;
+    console.log(`[State] Belt orientation set to: ${newOrientation}`);
+  
+    // FIX: Reset ring positions to 0 for a clean state on toggle.
+    appState.rings.pitchClass = 0;
+    appState.rings.degree = 0;
+    appState.rings.chromatic = 0;
+    appState.rings.highlightPosition = 0;
+    console.log('[State] Resetting ring positions to 0 for orientation change.');
+
+    mainContainer.classList.toggle('vertical-layout', newOrientation === 'vertical');
+  
+    appState.belts.init = false;
+    console.log('[Belts] Belt initialization reset for recalculation.');
+  
+    closeSidebar();
+}
+
+settingsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+});
+
+sidebarOverlay.addEventListener('click', closeSidebar);
+toggleOrientationBtn.addEventListener('click', toggleOrientation);
+
 initCanvasInteraction(canvas, onInteractionEnd);
 initBeltInteraction(onInteractionEnd);
 
+function checkCanvasSize() {
+    const { dpr } = appState.dimensions;
+    const newSize = canvas.offsetWidth;
+
+    if (newSize === appState.dimensions.size) {
+        return;
+    }
+
+    console.log(`[Canvas] Resizing from ${appState.dimensions.size}px to ${newSize}px`);
+    appState.dimensions.size = newSize;
+    appState.dimensions.cx = newSize / 2;
+    appState.dimensions.cy = newSize / 2;
+    
+    canvas.width = newSize * dpr;
+    canvas.height = newSize * dpr;
+
+    appState.belts.init = false; 
+}
+
 function redraw(){
+  checkCanvasSize();
+
   const { size, dpr } = appState.dimensions;
   if(!size) return;
   
@@ -173,9 +206,12 @@ function redraw(){
     highlightPattern
   );
   
-  updatePlaybackFlash(rings, playback, belts.itemW.chromaticBelt);
+  const chromaticItemSize = belts.itemSize.chromaticBelt;
+  const beltOrientation = belts.orientation;
+  updatePlaybackFlash(rings, playback, chromaticItemSize, beltOrientation);
   
   updateResultText();
 }
 
+console.log('[Main] Starting render loop.');
 makeRenderLoop(redraw);

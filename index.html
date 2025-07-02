@@ -4,17 +4,34 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Diatonic Compass</title>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="css/main.css" />
+<link rel="stylesheet" href="css/belts.css" />
 </head>
 <body>
-<div class="main-container" role="application" aria-label="Diatonic Compass interactive widget">
-<div class="wheel-container">
-<canvas id="chromaWheel" aria-label="Diatonic Compass concentric rings"></canvas>
+<!-- START: Sidebar Elements -->
+<button id="settings-btn" aria-label="Open settings sidebar" aria-controls="sidebar" aria-expanded="false">⚙️</button>
+
+<div id="sidebar" role="complementary" aria-hidden="true">
+  <div class="sidebar-content">
+    Quinn Fleming's<br>Diatonic Compass
+    <br><br>
+    <button id="toggle-orientation-btn" class="sidebar-btn">Toggle Orientation</button>
+  </div>
 </div>
-<div id="result-container">
-    <button id="flat-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle flat names">♭</button>
-    <div id="result-text" role="status" aria-live="polite"></div>
-    <button id="sharp-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle sharp names">♯</button>
+
+<div id="sidebar-overlay"></div>
+<!-- END: Sidebar Elements -->
+
+<div class="main-container" role="application" aria-label="Diatonic Compass interactive widget">
+  <div class="wheel-and-result-wrapper">
+    <div class="wheel-container">
+      <canvas id="chromaWheel" aria-label="Diatonic Compass concentric rings"></canvas>
+    </div>
+    <div id="result-container">
+        <button id="flat-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle flat names">♭</button>
+        <div id="result-text" role="status" aria-live="polite"></div>
+        <button id="sharp-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle sharp names">♯</button>
+      </div>
   </div>
 
   <div class="belts-container">

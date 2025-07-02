@@ -8,20 +8,28 @@ import { normAngle } from './math.js';
  * @param {number} angle
  */
 export function setRingAngle(ringKey, angle) {
+  // ... (this function is unchanged)
   if (appState.rings.hasOwnProperty(ringKey)) {
-    appState.rings[ringKey] = normAngle(angle);
+    const normalizedAngle = normAngle(angle);
+    appState.rings[ringKey] = normalizedAngle;
   }
 }
 
 /**
- * Co-rotates all three rings by a given delta. This is used during a drag
- * to provide direct 1:1 visual feedback for all moving parts.
- * @param {object} startAngles - An object with startPitchClass, startDegree, startChrom, and startHighlight.
- * @param {number} deltaAngle - The change in angle in radians.
+ * Co-rotates all rings. In vertical mode, the visual movement of the chromatic
+ * ring is separated from the functional movement of the other rings.
+ * @param {object} startAngles - An object with the starting angles of all rings.
+ * @param {number} functionalDelta - The delta for the wheel and other belts (can be inverted).
+ * @param {number} visualDelta - The delta for the chromatic belt's visual movement (always direct).
  */
-export function coRotateRings(startAngles, deltaAngle) {
-  appState.rings.pitchClass       = normAngle(startAngles.startPitchClass + deltaAngle);
-  appState.rings.degree           = normAngle(startAngles.startDegree + deltaAngle);
-  appState.rings.chromatic        = normAngle(startAngles.startChrom + deltaAngle);
-  appState.rings.highlightPosition = normAngle(startAngles.startHighlight + deltaAngle);
+export function coRotateRings(startAngles, functionalDelta, visualDelta) {
+  // Use the visualDelta for the chromatic ring to match the user's gesture.
+  // If visualDelta is not provided, default to functionalDelta for horizontal mode.
+  const chromDelta = visualDelta ?? functionalDelta;
+  appState.rings.chromatic = normAngle(startAngles.startChrom + chromDelta);
+
+  // Use the functionalDelta for all other rings to get the correct wheel rotation.
+  appState.rings.pitchClass = normAngle(startAngles.startPitchClass + functionalDelta);
+  appState.rings.degree = normAngle(startAngles.startDegree + functionalDelta);
+  appState.rings.highlightPosition = normAngle(startAngles.startHighlight + functionalDelta);
 }
