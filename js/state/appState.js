@@ -17,14 +17,12 @@ export const appState = {
       startHighlight:0
     },
     belts:{ 
-        // REFACTOR: 'itemW' is now 'itemSize' to be orientation-agnostic.
         itemSize:{}, 
         tracks:{}, 
         init:false,
-        // REFACTOR: Added orientation state for future vertical/horizontal switching.
         orientation: 'horizontal'
     },
-    dimensions:{ size:0, cx:0, cy:0, dpr: 1, scale: 1 },
+    dimensions:{ size:0, cx:0, cy:0, dpr: 1 },
     animation: null,
     playback: {
       isPlaying: false,
@@ -32,11 +30,14 @@ export const appState = {
       sequence: [],
       timeoutId: null,
       audioContext: null,
-      // MODIFICATION: Add property to store the scale's root note during playback.
       rootNoteIndexForPlayback: null,
     },
     display: {
       sharp: true,
       flat: true,
+    },
+    // ADDED: State for UI elements like the sidebar
+    ui: {
+      sidebarOpen: false,
     }
   };

@@ -5,92 +5,63 @@ import { MODE_SCALE_DEGREES, DEGREE_MAP, DIATONIC_INTERVALS, PLAYBACK_NOTE_DURAT
 import { indexAtTop, normAngle } from './core/math.js';
 import { initAudio, playNote } from './audio/synth.js';
 
-/**
- * Calculates the sequence of notes for the current mode.
- * @returns {number[]} An array of 8 continuously ascending semitone numbers.
- */
+// ... (getScaleSequence and playNextNote functions are unchanged)
+
 function getScaleSequence() {
   const { pitchClass, degree, chromatic } = appState.rings;
-
   const rootNoteIndex = indexAtTop(normAngle(pitchClass - chromatic));
   const modeDegreeIndex = indexAtTop(normAngle(degree - chromatic));
-  
   const tonicInterval = DIATONIC_INTERVALS[modeDegreeIndex];
   const modeKey = DEGREE_MAP[tonicInterval];
   if (!modeKey) return [];
-
   const modeIntervals = MODE_SCALE_DEGREES[modeKey];
-  
   const scale = modeIntervals.map(interval => rootNoteIndex + interval);
-
-  scale.push(scale[0] + 12); 
-  
-  // LOG: Log the calculated scale sequence.
+  scale.push(scale[0] + 12);
   console.log('[Playback] Calculated scale sequence:', { scale, rootNoteIndex, modeKey });
   return scale;
 }
 
 function playNextNote() {
-  // Stop if playback was cancelled
   if (!appState.playback.isPlaying) {
-    stopPlayback(false); // Ensure cleanup without class toggle
+    stopPlayback(); 
     return;
   }
-  
   const sequence = appState.playback.sequence;
   if (sequence.length === 0) {
     stopPlayback();
     return;
   }
-  
   const currentNote = sequence.shift();
   appState.playback.currentNoteIndex = currentNote;
-  
-  // LOG: Log the note being played.
   console.log(`[Playback] Playing note: ${currentNote % 12} (raw index: ${currentNote})`);
   playNote(currentNote, PLAYBACK_NOTE_DURATION_MS / 1000);
-  
   const timeoutId = setTimeout(playNextNote, PLAYBACK_NOTE_DURATION_MS + PLAYBACK_PAUSE_MS);
   appState.playback.timeoutId = timeoutId;
 }
 
-/**
- * Starts the musical playback sequence.
- */
+
 export function startPlayback() {
   if (appState.playback.isPlaying) return;
-  
-  // LOG: Log playback start.
   console.log('[Playback] Starting playback.');
   initAudio();
-  
   const sequence = getScaleSequence();
   if (sequence.length === 0) {
     console.warn('[Playback] Could not start playback, no valid scale sequence found.');
     return;
   }
-
-  // MODIFICATION: Store the root note for the flash calculation.
   appState.playback.rootNoteIndexForPlayback = sequence[0];
   appState.playback.isPlaying = true;
   appState.playback.sequence = sequence;
   
-  document.getElementById('result-container').classList.add('playback-active');
+  // REMOVED: Direct DOM manipulation.
+  // document.getElementById('result-container').classList.add('playback-active');
   
   playNextNote();
 }
 
-/**
- * Stops the musical playback sequence.
- * @param {boolean} [toggleClass=true] - Whether to remove the active class.
- */
-export function stopPlayback(toggleClass = true) {
-  if (!appState.playback.isPlaying && toggleClass) return;
-  
-  // LOG: Log playback stop.
-  if (appState.playback.isPlaying) {
-      console.log('[Playback] Stopping playback.');
-  }
+export function stopPlayback() {
+  if (!appState.playback.isPlaying) return;
+  console.log('[Playback] Stopping playback.');
   
   clearTimeout(appState.playback.timeoutId);
   
@@ -98,10 +69,8 @@ export function stopPlayback(toggleClass = true) {
   appState.playback.currentNoteIndex = null;
   appState.playback.sequence = [];
   appState.playback.timeoutId = null;
-  // MODIFICATION: Clear the stored root note.
   appState.playback.rootNoteIndexForPlayback = null;
-  
-  if (toggleClass) {
-    document.getElementById('result-container').classList.remove('playback-active');
-  }
+
+  // REMOVED: Direct DOM manipulation.
+  // document.getElementById('result-container').classList.remove('playback-active');
 }
