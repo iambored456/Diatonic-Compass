@@ -10,51 +10,55 @@
 <body>
 <!-- START: Sidebar Elements -->
 <button id="settings-btn" aria-label="Open settings sidebar" aria-controls="sidebar" aria-expanded="false">⚙️</button>
-
 <div id="sidebar" role="complementary" aria-hidden="true">
-  <div class="sidebar-content">
-    Quinn Fleming's<br>Diatonic Compass
-    <br><br>
-    <button id="toggle-orientation-btn" class="sidebar-btn">Toggle Orientation</button>
-  </div>
+<div class="sidebar-content">
+Quinn Fleming's<br>Diatonic Compass
+<br><br>
+<div class="sidebar-setting">
+<span>Orientation</span>
+<button id="toggle-orientation-btn" class="sidebar-btn">Vertical</button>
 </div>
-
+<div class="sidebar-setting">
+<span>Accidentals</span>
+<div class="sidebar-button-group">
+<button id="flat-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle flat names">♭</button>
+<button id="sharp-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle sharp names">♯</button>
+</div>
+</div>
+</div>
+</div>
 <div id="sidebar-overlay"></div>
 <!-- END: Sidebar Elements -->
-
 <div class="main-container" role="application" aria-label="Diatonic Compass interactive widget">
-  <div class="wheel-and-result-wrapper">
-    <div class="wheel-container">
-      <canvas id="chromaWheel" aria-label="Diatonic Compass concentric rings"></canvas>
-    </div>
-    <div id="result-container">
-        <button id="flat-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle flat names">♭</button>
-        <div id="result-text" role="status" aria-live="polite"></div>
-        <button id="sharp-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle sharp names">♯</button>
-      </div>
-  </div>
+<!--
+STRUCTURE CHANGE: The wrapper is gone. Wheel, Belts, and Result are now siblings.
+The order here (wheel, belts, result) defines the layout for the default "tall" screen view.
+-->
+<div class="wheel-container">
+<canvas id="chromaWheel" aria-label="Diatonic Compass concentric rings"></canvas>
+</div>
+<div class="belts-container">
+<div id="belt-cursor" aria-hidden="true"></div>
+<div id="belt-flash-overlay" aria-hidden="true"></div>
+<div class="belt pitch-belt" id="pitchBelt" role="listbox" aria-label="Pitch-name belt"></div>
+<div class="belt degree-belt" id="degreeBelt" role="listbox" aria-label="Scale-degree belt"></div>
 
-  <div class="belts-container">
-    <div id="belt-cursor" aria-hidden="true"></div>
-    <div id="belt-flash-overlay" aria-hidden="true"></div>
-
-    <div class="belt pitch-belt" id="pitchBelt" role="listbox" aria-label="Pitch-name belt"></div>
-    <div class="belt degree-belt" id="degreeBelt" role="listbox" aria-label="Scale-degree belt"></div>
-
-    <!-- The interval brackets are decorative and controlled by the degree belt -->
-    <div class="interval-brackets-wrapper" aria-hidden="true">
-      <div class="interval-brackets-container" id="intervalBracketsContainer" role="presentation"></div>
-    </div>
-
-    <div class="belt chromatic-belt" id="chromaticBelt" role="listbox" aria-label="Chromatic-index belt">
-      <!-- Layer 1 (Bottom): The color track, moves with the Degree ring -->
-      <div id="chromatic-colors-track" class="belt-track"></div>
-      <!-- Layer 2 (Top): The numbers track, moves with the Chromatic ring -->
-      <div id="chromatic-numbers-track" class="belt-track"></div>
-    </div>
-  </div>
+<!-- The interval brackets are decorative and controlled by the degree belt -->
+<div class="interval-brackets-wrapper" aria-hidden="true">
+  <div class="interval-brackets-container" id="intervalBracketsContainer" role="presentation"></div>
 </div>
 
+<div class="belt chromatic-belt" id="chromaticBelt" role="listbox" aria-label="Chromatic-index belt">
+  <!-- Layer 1 (Bottom): The color track, moves with the Degree ring -->
+  <div id="chromatic-colors-track" class="belt-track"></div>
+  <!-- Layer 2 (Top): The numbers track, moves with the Chromatic ring -->
+  <div id="chromatic-numbers-track" class="belt-track"></div>
+</div>
+</div>
+<div id="result-container">
+<div id="result-text" role="status" aria-live="polite"></div>
+</div>
+</div>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

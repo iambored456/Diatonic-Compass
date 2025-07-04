@@ -1,12 +1,13 @@
 // (file path: js/app.js)
-
 import { appState } from './state/appState.js';
 import { makeRenderLoop } from './core/renderLoop.js';
 import { checkCanvasSize } from './utils/canvas.js';
 import { generateDisplayLabels } from './core/logic.js';
 import { stepAnim } from './core/animation.js';
 import { DIATONIC_DEGREE_INDICES } from './core/constants.js';
-import { startPlayback, stopPlayback } from './playback.js';
+
+// Import the ActionController
+import { ActionController } from './core/ActionController.js';
 
 import Wheel from './components/Wheel.js';
 import Belts from './components/Belts.js';
@@ -14,7 +15,6 @@ import UIControls from './components/UIControls.js';
 
 export default class App {
   constructor(container) {
-    console.log("Diatonic Compass Initializing...");
     this.container = container;
     this.state = appState;
 
@@ -23,74 +23,69 @@ export default class App {
       beltsContainer: container.querySelector('.belts-container'),
     };
 
-    // Define callbacks to pass to the UIControls component
     const controlCallbacks = {
-      onToggleFlat: this.handleAccidentalToggle.bind(this, 'flat'),
-      onToggleSharp: this.handleAccidentalToggle.bind(this, 'sharp'),
-      onTogglePlayback: this.handleTogglePlayback.bind(this),
-      onToggleSidebar: this.handleToggleSidebar.bind(this),
-      onToggleOrientation: this.handleToggleOrientation.bind(this),
+      onToggleFlat: () => ActionController.toggleAccidental('flat'),
+      onToggleSharp: () => ActionController.toggleAccidental('sharp'),
+      onTogglePlayback: () => ActionController.togglePlayback(),
+      onToggleSidebar: (state) => ActionController.toggleSidebar(state),
+      // This is now handled by the responsive logic, but we can leave it for the button
+      onToggleOrientation: () => ActionController.setOrientation(
+          this.state.belts.orientation === 'horizontal' ? 'vertical' : 'horizontal'
+      ),
     };
 
     // Initialize all components
     this.wheel = new Wheel(this.elements.canvas, this.state, this.onInteractionEnd.bind(this));
     this.belts = new Belts(this.elements.beltsContainer, this.state, this.onInteractionEnd.bind(this));
     this.uiControls = new UIControls(container, this.state, controlCallbacks);
+    
+    // Call the setup method
+    this._setupResponsiveLogic();
 
     makeRenderLoop(this.redraw.bind(this));
   }
   
-  // --- Callback Handlers for State Changes ---
-
   onInteractionEnd() {
-    // This is now just a hook. The text update is handled in UIControls.
-  }
-  
-  handleAccidentalToggle(type) {
-    this.state.display[type] = !this.state.display[type];
-    // Ensure at least one accidental is always active
-    if (!this.state.display.sharp && !this.state.display.flat) {
-      const otherType = type === 'sharp' ? 'flat' : 'sharp';
-      this.state.display[otherType] = true;
-    }
+    // This hook remains for any post-animation logic if needed.
   }
 
-  handleTogglePlayback() {
-    if (this.state.playback.isPlaying) {
-      stopPlayback();
-    } else if (!this.state.drag.active && !this.state.animation) {
-      startPlayback();
-    }
-  }
-  
-  handleToggleSidebar(forceState) {
-    this.state.ui.sidebarOpen = typeof forceState === 'boolean' ? forceState : !this.state.ui.sidebarOpen;
-  }
-  
-  handleToggleOrientation() {
-    const newOrientation = this.state.belts.orientation === 'horizontal' ? 'vertical' : 'horizontal';
-    this.state.belts.orientation = newOrientation;
-    
-    // Reset state for the change
-    this.state.rings.pitchClass = 0;
-    this.state.rings.degree = 0;
-    this.state.rings.chromatic = 0;
-    this.state.rings.highlightPosition = 0;
-    this.state.belts.init = false;
-    
-    this.container.classList.toggle('vertical-layout', newOrientation === 'vertical');
-    this.handleToggleSidebar(false); // Always close sidebar after toggling
-  }
+  _setupResponsiveLogic() {
+    // Debounce function to limit how often the resize logic runs
+    const debounce = (func, delay) => {
+        let timeout;
+        return (...args) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    };
 
-  // --- Main Render Loop ---
+    // The core logic to check orientation
+    const handleResize = () => {
+        const isWide = window.innerWidth > window.innerHeight;
+        const newOrientation = isWide ? 'vertical' : 'horizontal';
+        
+        // Use the existing action to change orientation
+        if (this.state.belts.orientation !== newOrientation) {
+          ActionController.setOrientation(newOrientation);
+        } else {
+          // Even if orientation doesn't change, we might need to resize the canvas
+          this.redraw(performance.now());
+        }
+    };
+
+    // Listen for window resize events
+    window.addEventListener('resize', debounce(handleResize, 50)); // Lowered delay for smoother resizing feel
+    
+    // Run once on initial load
+    handleResize();
+  }
 
   redraw(time) {
-    stepAnim(time); // Advance animation if active
+    stepAnim(time);
 
-    const canvasResized = checkCanvasSize(this.elements.canvas, this.state.dimensions);
-    if (canvasResized) {
-      this.state.belts.init = false;
-    }
+    // **IMPROVEMENT**: We just check the canvas size. We no longer reset the belts here.
+    // The `belts.init` flag is now correctly handled by `ActionController.setOrientation`.
+    checkCanvasSize(this.elements.canvas, this.state.dimensions);
     
     if (!this.state.dimensions.size) return;
 
@@ -98,7 +93,7 @@ export default class App {
     const labels = generateDisplayLabels(this.state);
     const highlightPattern = DIATONIC_DEGREE_INDICES;
   
-    // Update all components with the latest state
+    // Update all components
     this.wheel.update(rings, labels, playback);
     this.belts.update(labels, highlightPattern);
     this.uiControls.update();

@@ -1,11 +1,27 @@
 /* (file path: css/belts.css) */
 
+/* --- HORIZONTAL BELT ORDERING --- */
+.pitch-belt {
+  order: 1;
+}
+.degree-belt {
+  order: 4;
+}
+.interval-brackets-wrapper {
+  order: 3;
+}
+.chromatic-belt {
+  order: 2;
+}
+
 .belts-container {
   width: 100%;
-  max-width: 750px;
+  max-width: 46.875rem;
+  min-width: 0;
+  height: clamp(1rem, 14rem, 25rem);
   display: flex;
   flex-direction: column;
-  gap: var(--space-s);
+  gap:0.3rem;
   position: relative;
   flex-shrink: 0;
 }
@@ -38,12 +54,12 @@
 }
 
 .belt {
-  height: 50px;
+  height: clamp(2rem, 4rem, 8rem);
   background: #e0e0e0;
   border-radius: var(--radius-small);
   overflow: hidden;
   position: relative;
-  box-shadow: inset 0 0 5px rgba(0,0,0,.1);
+  box-shadow: inset 0 0 0.3125rem rgba(0,0,0,.1); /* 5px */
   touch-action: none;
 }
 
@@ -73,7 +89,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: clamp(0.5rem, 1.35rem, 8rem);
   border-right: var(--border-width) solid #ccc;
   user-select: none;
   line-height: 1.1;
@@ -92,7 +108,7 @@
 }
 
 .interval-brackets-container {
-  height: 30px;
+  height: 1.875rem; /* 30px */
   overflow: hidden;
   position: relative;
   touch-action: none;
@@ -111,7 +127,7 @@
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  font-size: 20px;
+  font-size: clamp(1rem, 1.3rem, 2rem);
   padding: 0;
   position:relative;
   user-select: none;
@@ -121,7 +137,7 @@
 .interval-bracket-cell[data-steps]::after {
   content:"";
   position:absolute;
-  bottom: 2px;
+  bottom: 0.125rem; /* 2px */
   left:5%;
   height:40%;
   border: var(--border-width-medium) solid #000;
@@ -130,7 +146,18 @@
 }
 
 .interval-bracket-cell[data-steps="1"]::after { right: 5%; }
-.interval-bracket-cell[data-steps="2"]::after { right: calc(-100% + 5%); }
+.interval-bracket-cell[data-steps="2"]::after {
+  right: calc(-100% + 5%); 
+}
+
+/* --- ADD THIS NEW RULE --- */
+/* Nudges the "+2" interval label in horizontal orientation */
+.interval-bracket-cell[data-steps="2"] span {
+  position: relative;
+  left: 50%;
+}
+
+
 
 /* --- Vertical Layout Styles for Belts --- */
 
@@ -138,19 +165,28 @@
   order: 1;
   flex-direction: row;
   width: auto;
-  height: auto;
+  height: 100%;
   max-width: none;
-  max-height: 800px;
+  max-height: 100%; /* 800px */
+    min-height: 0;
   flex-shrink: 0;
+    gap:1.5rem; /* Increases space between belts, making the container wider */
+
+}
+
+/* --- ADD THIS RULE FOR ROBUSTNESS --- */
+/* This resets any custom ordering for vertical mode */
+.main-container.vertical-layout .belts-container > * {
+  order: initial; 
 }
 
 .main-container.vertical-layout .belt {
-  width: 45px;
+  width: 2.8125rem; /* 45px */
   height: 100%;
 }
 
 .main-container.vertical-layout .interval-brackets-container {
-  width: 30px;
+  width: 1.875rem; /* 30px */
   height: 100%;
 }
 
@@ -185,8 +221,8 @@
 }
 
 .main-container.vertical-layout #belt-flash-overlay {
-  top: auto;   /* Change this */
-  bottom: 0;    /* Change this */
+  top: auto;
+  bottom: 0;
   left: calc(-1 * var(--border-width-thick));
   right: calc(-1 * var(--border-width-thick));
   width: auto;
@@ -212,7 +248,7 @@
 }
 
 .main-container.vertical-layout .interval-bracket-cell[data-steps]::after {
-    left: 2px;
+    left: 0.125rem; /* 2px */
     width: 40%;
     border-right: none;
     border-radius: var(--radius-medium) 0 0 var(--radius-medium);

@@ -1,217 +1,319 @@
 /* (file path: style/main.css) */
 @font-face {
-font-family: 'Atkinson Hyperlegible Next';
-src: url('../fonts/AtkinsonHyperlegibleNext-Regular.otf') format('opentype');
-font-weight: normal;
-font-style: normal;
+  font-family: 'Atkinson Hyperlegible Next';
+  src: url('../fonts/AtkinsonHyperlegibleNext-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
 }
 @font-face {
-font-family: 'Atkinson Hyperlegible Next';
-src: url('../fonts/AtkinsonHyperlegibleNext-Bold.otf') format('opentype');
-font-weight: bold;
-font-style: normal;
+  font-family: 'Atkinson Hyperlegible Next';
+  src: url('../fonts/AtkinsonHyperlegibleNext-Bold.otf') format('opentype');
+  font-weight: bold;
+  font-style: normal;
 }
+
 :root {
---unit: 1px;
---border-width: var(--unit);
---border-width-medium: calc(var(--unit) * 1.5);
---border-width-thick: calc(var(--unit) * 2.5);
---border-width-cursor: calc(var(--unit) * 3);
---radius-small: 5px;
---radius-medium: 8px;
---space-xs: 8px;
---space-s: 15px;
---space-m: 20px;
+  /* Base unit converted to rem (assuming 1rem = 16px base) */
+  --unit: 0.0625rem; /* 1px */
+  --border-width: var(--unit);
+  --border-width-medium: calc(var(--unit) * 1.5);
+  --border-width-thick: calc(var(--unit) * 2.5);
+  --border-width-cursor: calc(var(--unit) * 3);
+  
+  /* Converted to rem */
+  --radius-small: 0.3125rem; /* 5px */
+  --radius-medium: 0.5rem;   /* 8px */
+  --space-xs: 0.5rem;      /* 8px */
+  --space-s: 0.9375rem;   /* 15px */
+  --space-m: 1.25rem;      /* 20px */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  /* This is the core of our fluid scaling. 
+     The font size will be at least 14px, at most 18px,
+     and will grow with the viewport width in between. */
+  font-size: clamp(14px, 1.2vw + 0.5rem, 18px);
+}
+
 html, body {
-height: 100%;
-width: 100%;
-overflow: hidden;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
+
 body {
-display: flex;
-justify-content: center;
-align-items: center;
-background: #f5f5f5;
-font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
-padding: var(--space-s);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f5f5f5;
+  font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
 }
+
+/* --- SOLUTION FOR TALL SCREENS (DEFAULT) --- */
 .main-container {
-position: relative;
-width: 100%;
-height: 100%;
-max-width: 800px;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-gap: var(--space-m);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 50rem; /* 800px */
+  display: grid;
+  grid-template-rows: 1fr auto auto; 
+  gap: 0.5rem;
+  min-height: 0; 
+  padding:0.2rem;
 }
-.wheel-and-result-wrapper {
-display: flex;
-flex-direction: column;
-gap: var(--space-m);
-width: 100%;
-height: 100%;
-align-items: center;
-justify-content: center;
-min-height: 0;
-}
+
+/* 
+  This container now sits in a perfectly sized grid cell.
+  Its only job is to center the canvas.
+*/
 .wheel-container {
-position: relative;
-width: 100%;
-aspect-ratio: 1 / 1;
-flex-shrink: 1;
-flex-grow: 1;
-min-height: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  min-height: 0; /* Prevents canvas from overflowing this container */
+  min-width: 0;
 }
+
+/* 
+  This logic is perfect and remains unchanged. It will expand to fill the .wheel-container.
+*/
 canvas {
-width: 100%;
-height: 100%;
-border-radius: 50%;
-background: #fff;
-border: var(--border-width) solid #ccc;
-touch-action: none;
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
+  
+  /* Visuals */
+  border-radius: 50%;
+  background: #fff;
+  border: var(--border-width) solid #ccc;
+  touch-action: none;
 }
-#result-container {
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: var(--space-s);
-width: 100%;
-max-width: 450px;
-height: 60px;
-padding: var(--space-xs) var(--space-s);
-border-radius: var(--radius-small);
-background: #fff;
-color: #333;
-box-shadow: 0 0 5px rgba(0,0,0,.1);
-flex-shrink: 0;
-transition: background-color 0.2s;
-}
+
+ 
+
+
 #result-container.playback-active {
-background-color: #A5D6A7;
+  background-color: #A5D6A7;
 }
+
 #result-text {
-flex-grow: 1;
-text-align: center;
-font-size: 24px;
-line-height: 1.2;
-cursor: pointer;
-user-select: none;
+  flex-grow: 1;
+  text-align: center;
+  font-size: 1.8; /* 24px */
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
 }
+
 .accidental-toggle {
-background: #e0e0e0;
-border: 1px solid #ccc;
-color: #333;
-font-size: 26px;
-font-weight: bold;
-border-radius: var(--radius-small);
-padding: var(--space-xs) var(--space-s);
-cursor: pointer;
-opacity: 0.4;
-transition: opacity 0.2s, background-color 0.2s;
--webkit-tap-highlight-color: transparent;
+  background: #e0e0e0;
+  border: 1px solid #ccc;
+  color: #333;
+  font-size: 1.625rem; /* 26px */
+  font-weight: bold;
+  border-radius: var(--radius-small);
+  padding: var(--space-xs) var(--space-s);
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.2s, background-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
+
 .accidental-toggle.active {
-background-color: #FFEB3B;
-opacity: 1;
+  background-color: #FFEB3B;
+  opacity: 1;
 }
+
 /* --- START: Settings & Sidebar Styles --- */
 #settings-btn {
-position: absolute;
-top: 20px;
-left: 20px;
-z-index: 1001;
-font-size: 32px;
-line-height: 1;
-background: rgba(255, 255, 255, 0.8);
-border: 1px solid #ccc;
-border-radius: 50%;
-width: 50px;
-height: 50px;
-display: flex;
-justify-content: center;
-align-items: center;
-cursor: pointer;
--webkit-tap-highlight-color: transparent;
-transition: transform 0.2s ease;
+  position: absolute;
+  top: 1.25rem; /* 20px */
+  right: 1.25rem; /* 20px */
+  z-index: 1001;
+  font-size: 2rem; /* 32px */
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  width: 3.125rem; /* 50px */
+  height: 3.125rem; /* 50px */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease;
 }
+
 #settings-btn:hover {
-transform: rotate(45deg);
+  transform: rotate(45deg);
 }
+
 #sidebar {
-position: fixed;
-top: 0;
-left: 0;
-height: 100%;
-width: 300px;
-max-width: 80%;
-background: #fff;
-box-shadow: 4px 0 15px rgba(0,0,0,0.2);
-z-index: 1002;
-transform: translateX(-100%);
-transition: transform 0.3s ease-in-out;
-display: flex;
-padding-top: 80px;
-align-items: flex-start;
-justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 18.75rem; /* 300px */
+  max-width: 80%;
+  background: #fff;
+  box-shadow: 0.25rem 0 0.9375rem rgba(0,0,0,0.2); /* 4px 15px */
+  z-index: 1002;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  display: flex;
+  padding-top: 5rem; /* 80px */
+  align-items: flex-start;
+  justify-content: center;
 }
 #sidebar.open {
-transform: translateX(0);
+  transform: translateX(0);
 }
 .sidebar-content {
-font-size: 24px;
-color: #333;
-text-align: center;
-line-height: 1.5;
-font-weight: bold;
-padding: 20px;
-width: 100%;
+  font-size: 1.5rem; /* 24px */
+  color: #333;
+  text-align: center;
+  line-height: 1.5;
+  font-weight: bold;
+  padding: 1.25rem; /* 20px */
+  width: 100%;
 }
 .sidebar-btn {
-background: #e0e0e0;
-border: 1px solid #ccc;
-color: #333;
-font-size: 18px;
-border-radius: var(--radius-small);
-padding: var(--space-xs) var(--space-s);
-cursor: pointer;
-width: 100%;
-margin-top: 20px;
-transition: background-color 0.2s;
+  background: #e0e0e0;
+  border: 1px solid #ccc;
+  color: #333;
+  font-size: 1.125rem; /* 18px */
+  border-radius: var(--radius-small);
+  padding: var(--space-xs) var(--space-s);
+  cursor: pointer;
+  width: 100%;
+  margin-top: 1.25rem; /* 20px */
+  transition: background-color 0.2s;
 }
 .sidebar-btn:hover {
-background-color: #d0d0d0;
+  background-color: #d0d0d0;
 }
+
+.sidebar-setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 1.25rem; /* 20px */
+  padding: 0 var(--space-xs); /* Add some padding for alignment */
+}
+
+.sidebar-setting span {
+  font-size: 1.125rem; /* 18px */
+  font-weight: normal;
+}
+
+.sidebar-setting .sidebar-btn {
+  margin-top: 0; /* Override the default top margin */
+  width: auto;
+  flex-basis: 50%; /* Give the button a consistent width */
+}
+
+.sidebar-button-group {
+  display: flex;
+  gap: var(--space-xs);
+  flex-basis: 50%;
+  justify-content: flex-end;
+}
+
+.sidebar-button-group .accidental-toggle {
+  padding: var(--space-xs);
+  font-size: 1.25rem;
+  line-height: 1;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
 #sidebar-overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: rgba(0,0,0,0.5);
-z-index: 1000;
-opacity: 0;
-pointer-events: none;
-transition: opacity 0.3s ease-in-out;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
 }
 #sidebar-overlay.visible {
-opacity: 1;
-pointer-events: all;
+  opacity: 1;
+  pointer-events: all;
 }
-/* --- START: Vertical Layout Styles (Main Structure) --- */
+
+/* --- SOLUTION FOR WIDE SCREENS --- */
 .main-container.vertical-layout {
-flex-direction: row;
-align-items: stretch;
-max-width: none;
-gap: var(--space-s);
+  display: grid;
+  /* Define columns: controls (auto) and wheel (fills space) */
+  grid-template-columns: auto auto;
+  /* Define rows: main area (fills space) and result area (auto) */
+  grid-template-rows: 1fr auto;
+  /* Assign elements to named areas for a robust 2x2 layout */
+  grid-template-areas:
+    "belts wheel"
+    "result wheel";
+  gap: var(--space-s);
+  max-width: none;
+    justify-content: center; /* Centers the columns as a group */
+
 }
+
+/* Assign each element to its named grid area */
+.main-container.vertical-layout .belts-container {
+  grid-area: belts;
+}
+
+.main-container.vertical-layout .wheel-container {
+  grid-area: wheel;
+}
+
+.main-container.vertical-layout #result-container {
+  grid-area: result;
+  width: 100%;
+  max-width: none;
+}
+
 .main-container.vertical-layout .wheel-and-result-wrapper {
-order: 2;
-flex-grow: 1;
-height: auto;
-max-width: 800px;
+  display: none;
+}
+
+
+#result-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
+  width: 100%;
+  max-width: 28.125rem; /* 450px */
+  height: 3.75rem; /* 60px */
+  padding:0.2rem;
+  border-radius: var(--radius-small);
+  background: #fff;
+  color: #333;
+  box-shadow: 0 0 0.3125rem rgba(0,0,0,.1); /* 5px */
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+  justify-self: center; 
+}
+
+#result-container.playback-active {
+  background-color: #A5D6A7;
+}
+
+#result-text {
+  flex-grow: 1;
+  text-align: center;
+  font-size: 1.8rem; /* 24px */
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
 }

@@ -7,6 +7,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mainContainer) {
     new App(mainContainer);
   } else {
-    console.error('Main container not found. App could not be initialized.');
   }
 });

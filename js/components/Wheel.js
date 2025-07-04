@@ -2,7 +2,8 @@
 
 import { snapRing, snapChromaticAndSettleMode, snapDegreeToDiatonic } from '../core/animation.js';
 import { setRingAngle, coRotateRings } from '../core/actions.js';
-import { SEMITONES, ANGLE_STEP, FONT_FACTOR, FIXED_INTERVAL_COLOUR, PIANO_KEY_COLOUR } from '../core/constants.js';
+// UPDATED: Importing the new font factors
+import { SEMITONES, ANGLE_STEP, FONT_FACTOR_OUTER, FONT_FACTOR_MIDDLE, FONT_FACTOR_INNER, FIXED_INTERVAL_COLOUR, PIANO_KEY_COLOUR } from '../core/constants.js';
 import { getContrastColor } from '../core/color.js';
 
 export default class Wheel {
@@ -159,28 +160,47 @@ export default class Wheel {
         const rOuter=size*0.5*0.85, rMid=size*0.35*0.8, rInner=size*0.2*0.8;
         const canonicalNotes = Object.keys(PIANO_KEY_COLOUR);
 
-        const label = (angle, radius, text, fill) => {
-            ctx.fillStyle=fill;
-            ctx.font=`${size*FONT_FACTOR}px 'Atkinson Hyperlegible Next'`;
-            ctx.textAlign='center';
-            ctx.textBaseline='middle';
-            ctx.fillText(text, cx+Math.cos(angle)*radius, cy+Math.sin(angle)*radius);
+        // MODIFIED: 'label' function now accepts a fontSize parameter
+        const label = (angle, radius, text, fill, fontSize) => {
+            ctx.fillStyle = fill;
+            ctx.font = `${fontSize}px 'Atkinson Hyperlegible Next'`; // Use the passed-in size
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const x = cx + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius;
+
+            if (String(text).includes('<br>')) {
+                const lines = text.split('<br>');
+                const lineHeight = fontSize * 1.1;
+                const startY = y - (lineHeight * (lines.length - 1)) / 2;
+
+                lines.forEach((line, index) => {
+                    ctx.fillText(line, x, startY + (index * lineHeight));
+                });
+            } else {
+                ctx.fillText(text, x, y);
+            }
         };
 
+        // MODIFIED: Calculate font size for each ring and pass it to the label function
+        const outerFontSize = size * FONT_FACTOR_OUTER;
         chromaticLabels.forEach((n,i)=> {
             const originalNote = canonicalNotes[i];
-            const textToDraw = String(n).replace('<br>', '/'); // Use single line for canvas
-            label(i*ANGLE_STEP+pitchClass-Math.PI/2, rOuter, textToDraw, PIANO_KEY_COLOUR[originalNote]?'#000':'#fff');
+            const textToDraw = n; 
+            label(i*ANGLE_STEP+pitchClass-Math.PI/2, rOuter, textToDraw, PIANO_KEY_COLOUR[originalNote]?'#000':'#fff', outerFontSize);
         });
-
+        
+        const middleFontSize = size * FONT_FACTOR_MIDDLE;
         diatonicLabels.forEach((inv,i)=> {
             const bgColor = FIXED_INTERVAL_COLOUR[i];
             const textColor = getContrastColor(bgColor); 
-            const textToDraw = String(inv).replace('<br>', '/');
-            label(i*ANGLE_STEP+degree-Math.PI/2, rMid, textToDraw, textColor);
+            const textToDraw = inv;
+            label(i*ANGLE_STEP+degree-Math.PI/2, rMid, textToDraw, textColor, middleFontSize);
         });
 
-        SEMITONES.forEach(i=> label(i*ANGLE_STEP+chromatic-Math.PI/2,rInner,i.toString(),'#fff'));
+        const innerFontSize = size * FONT_FACTOR_INNER;
+        SEMITONES.forEach(i=> label(i*ANGLE_STEP+chromatic-Math.PI/2,rInner,i.toString(),'#fff', innerFontSize));
     };
 
     const drawPlaybackHighlight = () => {

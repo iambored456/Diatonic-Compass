@@ -15,11 +15,11 @@ export default class Belts {
     this.elements = {
       pitchBelt: container.querySelector('#pitchBelt'),
       degreeBelt: container.querySelector('#degreeBelt'),
-      intervalBrackets: container.querySelector('#intervalBracketsContainer'),
       chromaticBelt: container.querySelector('#chromaticBelt'),
       chromaticColorsTrack: container.querySelector('#chromatic-colors-track'),
       chromaticNumbersTrack: container.querySelector('#chromatic-numbers-track'),
       intervalBracketsTrackContainer: container.querySelector('#intervalBracketsContainer'),
+      intervalBracketsWrapper: container.querySelector('.interval-brackets-wrapper'),
       cursor: container.querySelector('#belt-cursor'),
       flashOverlay: container.querySelector('#belt-flash-overlay'),
     };
@@ -42,7 +42,6 @@ export default class Belts {
         const sizesCalculated = this._calculateAllItemSizes(orientation);
         if (sizesCalculated) {
           this.state.belts.init = true;
-          console.log('[Belts] All belt item sizes calculated and initialized.');
         }
       });
       return;
@@ -69,7 +68,6 @@ export default class Belts {
   }
 
   _initInteraction() {
-    console.log('[Interaction] Initializing belt handlers.');
     const { pitchBelt, degreeBelt, intervalBrackets, chromaticNumbersTrack } = this.elements;
 
     if (pitchBelt) {
@@ -162,7 +160,6 @@ export default class Belts {
   }
 
   _setupAllBelts(diatonicLabels, chromaticLabels) {
-    console.log('[Belts] Setting up belt content for the first time.');
     this.elements.pitchBelt.innerHTML = '';
     this.elements.degreeBelt.innerHTML = '';
     this.elements.intervalBracketsTrackContainer.innerHTML = '';
@@ -222,8 +219,7 @@ export default class Belts {
     return this._calcBeltItemSize('pitchBelt', this.elements.pitchBelt, orientation) &&
            this._calcBeltItemSize('degreeBelt', this.elements.degreeBelt, orientation) &&
            this._calcBeltItemSize('chromaticBelt', this.elements.chromaticBelt, orientation) &&
-           this._calcBeltItemSize('intervalBracketsContainer', this.elements.intervalBrackets, orientation);
-  }
+          this._calcBeltItemSize('intervalBracketsContainer', this.elements.intervalBracketsWrapper, orientation);  }
 
   _calcBeltItemSize(beltId, container, orientation) {
     const size = orientation === 'vertical' ? container.offsetHeight : container.offsetWidth;

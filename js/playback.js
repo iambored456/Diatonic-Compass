@@ -17,7 +17,6 @@ function getScaleSequence() {
   const modeIntervals = MODE_SCALE_DEGREES[modeKey];
   const scale = modeIntervals.map(interval => rootNoteIndex + interval);
   scale.push(scale[0] + 12);
-  console.log('[Playback] Calculated scale sequence:', { scale, rootNoteIndex, modeKey });
   return scale;
 }
 
@@ -33,7 +32,6 @@ function playNextNote() {
   }
   const currentNote = sequence.shift();
   appState.playback.currentNoteIndex = currentNote;
-  console.log(`[Playback] Playing note: ${currentNote % 12} (raw index: ${currentNote})`);
   playNote(currentNote, PLAYBACK_NOTE_DURATION_MS / 1000);
   const timeoutId = setTimeout(playNextNote, PLAYBACK_NOTE_DURATION_MS + PLAYBACK_PAUSE_MS);
   appState.playback.timeoutId = timeoutId;
@@ -42,11 +40,9 @@ function playNextNote() {
 
 export function startPlayback() {
   if (appState.playback.isPlaying) return;
-  console.log('[Playback] Starting playback.');
   initAudio();
   const sequence = getScaleSequence();
   if (sequence.length === 0) {
-    console.warn('[Playback] Could not start playback, no valid scale sequence found.');
     return;
   }
   appState.playback.rootNoteIndexForPlayback = sequence[0];
@@ -61,7 +57,6 @@ export function startPlayback() {
 
 export function stopPlayback() {
   if (!appState.playback.isPlaying) return;
-  console.log('[Playback] Stopping playback.');
   
   clearTimeout(appState.playback.timeoutId);
   

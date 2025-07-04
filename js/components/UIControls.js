@@ -6,12 +6,13 @@ export default class UIControls {
     this.state = state;
     this.callbacks = callbacks; // { onToggleSharp, onToggleFlat, onTogglePlayback, ... }
 
-    // Find all control elements within the main container
+    // Find all control elements
     this.elements = {
       resultContainer: container.querySelector('#result-container'),
       resultText: container.querySelector('#result-text'),
-      flatBtn: container.querySelector('#flat-btn'),
-      sharpBtn: container.querySelector('#sharp-btn'),
+      // UPDATED: Select these via document since they are outside the container
+      flatBtn: document.getElementById('flat-btn'),
+      sharpBtn: document.getElementById('sharp-btn'),
       settingsBtn: document.getElementById('settings-btn'),
       sidebar: document.getElementById('sidebar'),
       sidebarOverlay: document.getElementById('sidebar-overlay'),
@@ -27,7 +28,7 @@ export default class UIControls {
     
     // The result container itself acts as the play/stop button
     this.elements.resultContainer.addEventListener('click', (e) => {
-        // Prevent button clicks from triggering playback
+        // Prevent button clicks from triggering playback (this logic is now redundant but harmless)
         if (e.target.closest('button')) return;
         this.callbacks.onTogglePlayback();
     });
@@ -47,10 +48,10 @@ export default class UIControls {
   }
 
   update() {
-    const { display, playback, ui } = this.state;
-    const { resultContainer, flatBtn, sharpBtn, resultText, sidebar, sidebarOverlay, settingsBtn } = this.elements;
+    const { display, playback, ui, belts } = this.state;
+    const { resultContainer, flatBtn, sharpBtn, resultText, sidebar, sidebarOverlay, settingsBtn, toggleOrientationBtn } = this.elements;
 
-    // Update accidental buttons
+    // Update accidental buttons (this logic remains the same)
     flatBtn.classList.toggle('active', display.flat);
     sharpBtn.classList.toggle('active', display.sharp);
     flatBtn.setAttribute('aria-pressed', String(display.flat));
@@ -61,6 +62,13 @@ export default class UIControls {
 
     // Update result text
     updateResultText(this.state, resultText);
+    
+    // Update the orientation toggle button text
+    const currentOrientation = belts.orientation;
+    const targetOrientation = currentOrientation === 'horizontal' ? 'Vertical' : 'Horizontal';
+    if (toggleOrientationBtn.textContent !== targetOrientation) {
+        toggleOrientationBtn.textContent = targetOrientation;
+    }
     
     // Update sidebar visibility
     const isSidebarOpen = ui.sidebarOpen;

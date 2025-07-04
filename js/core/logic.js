@@ -3,29 +3,23 @@
 import { CHROMATIC_NOTES, DIATONIC_INTERVALS, DEGREE_MAP, MODE_NAME, BELT_TEXT_STACK_THRESHOLD } from './constants.js';
 import { indexAtTop, normAngle } from './math.js';
 
+// (file path: js/core/logic.js)
+
 export function generateDisplayLabels(state) {
   const { sharp, flat } = state.display;
-  const { orientation, itemSize } = state.belts;
-  const cellW = itemSize.pitchBelt || 0;
-  const useStacked = (orientation === 'vertical') || (cellW > 0 && cellW < BELT_TEXT_STACK_THRESHOLD);
+  // We no longer need the orientation or itemSize here
 
   const processLabel = (label) => {
     if (!label.includes('/')) return label;
     const [sharpName, flatName] = label.split('/');
-    
-    // Stacked display for vertical layout or narrow horizontal cells
-    if (useStacked) {
-        if (sharp && flat) return `${sharpName}<br>${flatName}`;
-        if (sharp) return sharpName;
-        if (flat) return flatName;
-        return `${sharpName}<br>${flatName}`; // Default to stacked if none are active
-    }
-    
-    // Single line display
-    if (sharp && flat) return label;
+
+    // New simplified logic:
+    if (sharp && flat) return `${sharpName}<br>${flatName}`;
     if (sharp) return sharpName;
     if (flat) return flatName;
-    return sharpName; // Default to sharp if none are active
+
+    // Default case if somehow neither is active (your code prevents this, but it's safe)
+    return `${sharpName}<br>${flatName}`;
   };
 
   const chromaticLabels = CHROMATIC_NOTES.map(processLabel);

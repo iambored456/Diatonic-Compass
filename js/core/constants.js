@@ -50,7 +50,9 @@ export const MAJOR_SCALE_INTERVAL_STEPS = [2,2,1,2,2,2,1];
   
 export const TAU = Math.PI*2;
 export const ANGLE_STEP = TAU/12;
-export const FONT_FACTOR = 0.042;
+export const FONT_FACTOR_OUTER = 0.057;   // For the Pitch Ring (C, C#, etc.)
+export const FONT_FACTOR_MIDDLE = 0.052;  // For the Degree Ring (1, #1/b2, etc.)
+export const FONT_FACTOR_INNER = 0.042;   // For the Chromatic Ring (0-11)
   
 export const ANIM_MS = 300;
 
