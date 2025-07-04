@@ -13,6 +13,15 @@
 }
 
 :root {
+  /* --- THEME PALETTE (LIGHT MODE DEFAULT) --- */
+  --color-background: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-surface-dark-mode: #2e2e2e; /* The "grayer white" for dark mode surfaces */
+  --color-text-primary: #333333;
+  --color-text-secondary: #000000;
+  --color-key-white-text: #000000;
+  --color-key-black-text: #ffffff;
+
   /* Base unit converted to rem (assuming 1rem = 16px base) */
   --unit: 0.0625rem; /* 1px */
   --border-width: var(--unit);
@@ -28,12 +37,19 @@
   --space-m: 1.25rem;      /* 20px */
 }
 
+/* --- DARK MODE OVERRIDES --- */
+body.dark-mode {
+  --color-background: #121212;
+  --color-surface: #1e1e1e;
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #ffffff;
+  --color-key-white-text: #e0e0e0;
+}
+
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
-  /* This is the core of our fluid scaling. 
-     The font size will be at least 14px, at most 18px,
-     and will grow with the viewport width in between. */
   font-size: clamp(14px, 1.2vw + 0.5rem, 18px);
 }
 
@@ -47,8 +63,9 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f5f5f5;
+  background: var(--color-background); /* UPDATED */
   font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+  transition: background-color 0.3s;
 }
 
 /* --- SOLUTION FOR TALL SCREENS (DEFAULT) --- */
@@ -56,7 +73,7 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  max-width: 50rem; /* 800px */
+  max-width: 50rem;
   display: grid;
   grid-template-rows: 1fr auto auto; 
   gap: 0.5rem;
@@ -64,37 +81,44 @@ body {
   padding:0.2rem;
 }
 
-/* 
-  This container now sits in a perfectly sized grid cell.
-  Its only job is to center the canvas.
-*/
 .wheel-container {
   position: relative;
   width: 100%;
   height: 100%;
   display: grid;
   place-items: center;
-  min-height: 0; /* Prevents canvas from overflowing this container */
+  min-height: 0;
   min-width: 0;
 }
 
-/* 
-  This logic is perfect and remains unchanged. It will expand to fill the .wheel-container.
-*/
 canvas {
   aspect-ratio: 1 / 1;
   max-width: 100%;
   max-height: 100%;
-  
-  /* Visuals */
   border-radius: 50%;
-  background: #fff;
+  background: var(--color-surface); /* UPDATED */
   border: var(--border-width) solid #ccc;
   touch-action: none;
+  transition: background-color 0.3s;
 }
 
- 
-
+#result-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
+  width: 100%;
+  max-width: 28.125rem;
+  height: 3.75rem;
+  padding:0.2rem;
+  border-radius: var(--radius-small);
+  background: var(--color-surface); /* UPDATED */
+  color: var(--color-text-primary); /* UPDATED */
+  box-shadow: 0 0 0.3125rem rgba(0,0,0,.1);
+  flex-shrink: 0;
+  transition: background-color 0.3s, color 0.3s;
+  justify-self: center; 
+}
 
 #result-container.playback-active {
   background-color: #A5D6A7;
@@ -103,7 +127,7 @@ canvas {
 #result-text {
   flex-grow: 1;
   text-align: center;
-  font-size: 1.8; /* 24px */
+  font-size: 1.8rem;
   line-height: 1.2;
   cursor: pointer;
   user-select: none;
@@ -113,7 +137,7 @@ canvas {
   background: #e0e0e0;
   border: 1px solid #ccc;
   color: #333;
-  font-size: 1.625rem; /* 26px */
+  font-size: 1.625rem;
   font-weight: bold;
   border-radius: var(--radius-small);
   padding: var(--space-xs) var(--space-s);
@@ -131,16 +155,16 @@ canvas {
 /* --- START: Settings & Sidebar Styles --- */
 #settings-btn {
   position: absolute;
-  top: 1.25rem; /* 20px */
-  right: 1.25rem; /* 20px */
+  top: 1.25rem;
+  right: 1.25rem;
   z-index: 1001;
-  font-size: 2rem; /* 32px */
+  font-size: 2rem;
   line-height: 1;
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid #ccc;
   border-radius: 50%;
-  width: 3.125rem; /* 50px */
-  height: 3.125rem; /* 50px */
+  width: 3.125rem;
+  height: 3.125rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -158,15 +182,15 @@ canvas {
   top: 0;
   left: 0;
   height: 100%;
-  width: 18.75rem; /* 300px */
+  width: 18.75rem;
   max-width: 80%;
-  background: #fff;
-  box-shadow: 0.25rem 0 0.9375rem rgba(0,0,0,0.2); /* 4px 15px */
+  background: var(--color-surface); /* UPDATED */
+  box-shadow: 0.25rem 0 0.9375rem rgba(0,0,0,0.2);
   z-index: 1002;
   transform: translateX(-100%);
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s, background-color 0.3s;
   display: flex;
-  padding-top: 5rem; /* 80px */
+  padding-top: 5rem;
   align-items: flex-start;
   justify-content: center;
 }
@@ -174,24 +198,25 @@ canvas {
   transform: translateX(0);
 }
 .sidebar-content {
-  font-size: 1.5rem; /* 24px */
-  color: #333;
+  font-size: 1.5rem;
+  color: var(--color-text-primary); /* UPDATED */
   text-align: center;
   line-height: 1.5;
   font-weight: bold;
-  padding: 1.25rem; /* 20px */
+  padding: 1.25rem;
   width: 100%;
+  transition: color 0.3s;
 }
 .sidebar-btn {
   background: #e0e0e0;
   border: 1px solid #ccc;
   color: #333;
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.125rem;
   border-radius: var(--radius-small);
   padding: var(--space-xs) var(--space-s);
   cursor: pointer;
   width: 100%;
-  margin-top: 1.25rem; /* 20px */
+  margin-top: 1.25rem;
   transition: background-color 0.2s;
 }
 .sidebar-btn:hover {
@@ -203,19 +228,19 @@ canvas {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-top: 1.25rem; /* 20px */
-  padding: 0 var(--space-xs); /* Add some padding for alignment */
+  margin-top: 1.25rem;
+  padding: 0 var(--space-xs);
 }
 
 .sidebar-setting span {
-  font-size: 1.125rem; /* 18px */
+  font-size: 1.125rem;
   font-weight: normal;
 }
 
 .sidebar-setting .sidebar-btn {
-  margin-top: 0; /* Override the default top margin */
+  margin-top: 0;
   width: auto;
-  flex-basis: 50%; /* Give the button a consistent width */
+  flex-basis: 50%;
 }
 
 .sidebar-button-group {
@@ -253,21 +278,16 @@ canvas {
 /* --- SOLUTION FOR WIDE SCREENS --- */
 .main-container.vertical-layout {
   display: grid;
-  /* Define columns: controls (auto) and wheel (fills space) */
   grid-template-columns: auto auto;
-  /* Define rows: main area (fills space) and result area (auto) */
   grid-template-rows: 1fr auto;
-  /* Assign elements to named areas for a robust 2x2 layout */
   grid-template-areas:
     "belts wheel"
     "result wheel";
   gap: var(--space-s);
   max-width: none;
-    justify-content: center; /* Centers the columns as a group */
-
+  justify-content: center;
 }
 
-/* Assign each element to its named grid area */
 .main-container.vertical-layout .belts-container {
   grid-area: belts;
 }
@@ -284,36 +304,4 @@ canvas {
 
 .main-container.vertical-layout .wheel-and-result-wrapper {
   display: none;
-}
-
-
-#result-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-s);
-  width: 100%;
-  max-width: 28.125rem; /* 450px */
-  height: 3.75rem; /* 60px */
-  padding:0.2rem;
-  border-radius: var(--radius-small);
-  background: #fff;
-  color: #333;
-  box-shadow: 0 0 0.3125rem rgba(0,0,0,.1); /* 5px */
-  flex-shrink: 0;
-  transition: background-color 0.2s;
-  justify-self: center; 
-}
-
-#result-container.playback-active {
-  background-color: #A5D6A7;
-}
-
-#result-text {
-  flex-grow: 1;
-  text-align: center;
-  font-size: 1.8rem; /* 24px */
-  line-height: 1.2;
-  cursor: pointer;
-  user-select: none;
 }

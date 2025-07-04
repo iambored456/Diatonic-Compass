@@ -2,7 +2,6 @@
 
 import { snapRing, snapChromaticAndSettleMode, snapDegreeToDiatonic } from '../core/animation.js';
 import { setRingAngle, coRotateRings } from '../core/actions.js';
-// UPDATED: Importing the new font factors
 import { SEMITONES, ANGLE_STEP, FONT_FACTOR_OUTER, FONT_FACTOR_MIDDLE, FONT_FACTOR_INNER, FIXED_INTERVAL_COLOUR, PIANO_KEY_COLOUR } from '../core/constants.js';
 import { getContrastColor } from '../core/color.js';
 
@@ -115,7 +114,6 @@ export default class Wheel {
     const { pitchClass, degree, chromatic } = rings;
     const { chromaticLabels, diatonicLabels } = labels;
     
-    // --- Drawing sub-functions from original `drawWheel` ---
     const segPath = (r0, r1, angle) => {
         const a0 = angle - ANGLE_STEP / 2, a1 = angle + ANGLE_STEP / 2;
         ctx.beginPath();
@@ -130,6 +128,7 @@ export default class Wheel {
         canonicalNotes.forEach((note,i)=>{
           const ang=i*ANGLE_STEP+pitchClass-Math.PI/2;
           segPath(r0,r1,ang);
+          // --- REVERTED to original static colors ---
           ctx.fillStyle = PIANO_KEY_COLOUR[note] ? '#fff' : '#000';
           ctx.fill();
           ctx.lineWidth = size * 0.002;
@@ -160,10 +159,9 @@ export default class Wheel {
         const rOuter=size*0.5*0.85, rMid=size*0.35*0.8, rInner=size*0.2*0.8;
         const canonicalNotes = Object.keys(PIANO_KEY_COLOUR);
 
-        // MODIFIED: 'label' function now accepts a fontSize parameter
         const label = (angle, radius, text, fill, fontSize) => {
             ctx.fillStyle = fill;
-            ctx.font = `${fontSize}px 'Atkinson Hyperlegible Next'`; // Use the passed-in size
+            ctx.font = `${fontSize}px 'Atkinson Hyperlegible Next'`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -183,12 +181,13 @@ export default class Wheel {
             }
         };
 
-        // MODIFIED: Calculate font size for each ring and pass it to the label function
         const outerFontSize = size * FONT_FACTOR_OUTER;
         chromaticLabels.forEach((n,i)=> {
             const originalNote = canonicalNotes[i];
-            const textToDraw = n; 
-            label(i*ANGLE_STEP+pitchClass-Math.PI/2, rOuter, textToDraw, PIANO_KEY_COLOUR[originalNote]?'#000':'#fff', outerFontSize);
+            const textToDraw = n;
+            // --- REVERTED to original static colors ---
+            const textColor = PIANO_KEY_COLOUR[originalNote] ? '#000' : '#fff';
+            label(i*ANGLE_STEP+pitchClass-Math.PI/2, rOuter, textToDraw, textColor, outerFontSize);
         });
         
         const middleFontSize = size * FONT_FACTOR_MIDDLE;

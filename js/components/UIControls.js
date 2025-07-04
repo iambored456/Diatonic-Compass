@@ -17,6 +17,7 @@ export default class UIControls {
       sidebar: document.getElementById('sidebar'),
       sidebarOverlay: document.getElementById('sidebar-overlay'),
       toggleOrientationBtn: document.getElementById('toggle-orientation-btn'),
+      toggleDarkModeBtn: document.getElementById('toggle-dark-mode-btn'), // --- ADDED ---
     };
     
     this._initListeners();
@@ -45,11 +46,12 @@ export default class UIControls {
     });
 
     this.elements.toggleOrientationBtn.addEventListener('click', this.callbacks.onToggleOrientation);
+    this.elements.toggleDarkModeBtn.addEventListener('click', this.callbacks.onToggleDarkMode); // --- ADDED ---
   }
 
   update() {
     const { display, playback, ui, belts } = this.state;
-    const { resultContainer, flatBtn, sharpBtn, resultText, sidebar, sidebarOverlay, settingsBtn, toggleOrientationBtn } = this.elements;
+    const { resultContainer, flatBtn, sharpBtn, resultText, sidebar, sidebarOverlay, settingsBtn, toggleOrientationBtn, toggleDarkModeBtn } = this.elements;
 
     // Update accidental buttons (this logic remains the same)
     flatBtn.classList.toggle('active', display.flat);
@@ -70,6 +72,12 @@ export default class UIControls {
         toggleOrientationBtn.textContent = targetOrientation;
     }
     
+    // --- ADDED: Update the theme toggle button text ---
+    const themeText = ui.darkMode ? 'Light Mode' : 'Dark Mode';
+    if (toggleDarkModeBtn.textContent !== themeText) {
+        toggleDarkModeBtn.textContent = themeText;
+    }
+
     // Update sidebar visibility
     const isSidebarOpen = ui.sidebarOpen;
     sidebar.classList.toggle('open', isSidebarOpen);

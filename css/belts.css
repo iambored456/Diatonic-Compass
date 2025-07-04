@@ -140,9 +140,10 @@
   bottom: 0.125rem; /* 2px */
   left:5%;
   height:40%;
-  border: var(--border-width-medium) solid #000;
+  border: var(--border-width-medium) solid var(--color-text-secondary);
   border-top:none;
   border-radius:0 0 var(--radius-medium) var(--radius-medium);
+  transition: border-color 0.3s;
 }
 
 .interval-bracket-cell[data-steps="1"]::after { right: 5%; }
@@ -150,14 +151,17 @@
   right: calc(-100% + 5%); 
 }
 
-/* --- ADD THIS NEW RULE --- */
 /* Nudges the "+2" interval label in horizontal orientation */
 .interval-bracket-cell[data-steps="2"] span {
   position: relative;
   left: 50%;
 }
 
-
+/* --- ADDED --- */
+.interval-bracket-cell span {
+  color: var(--color-text-secondary);
+  transition: color 0.3s;
+}
 
 /* --- Vertical Layout Styles for Belts --- */
 
@@ -167,14 +171,13 @@
   width: auto;
   height: 100%;
   max-width: none;
-  max-height: 100%; /* 800px */
-    min-height: 0;
+  max-height: 100%;
+  min-height: 0;
   flex-shrink: 0;
-    gap:1.5rem; /* Increases space between belts, making the container wider */
+  gap:1.5rem; 
 
 }
 
-/* --- ADD THIS RULE FOR ROBUSTNESS --- */
 /* This resets any custom ordering for vertical mode */
 .main-container.vertical-layout .belts-container > * {
   order: initial; 

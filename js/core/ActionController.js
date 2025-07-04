@@ -3,6 +3,8 @@
 import { appState } from '../state/appState.js';
 import { startPlayback, stopPlayback } from '../playback.js';
 import { startSnap } from './animation.js';
+// --- ADDED: Import the new service ---
+import { savePreferences } from '../services/PreferencesService.js';
 
 /**
  * A centralized controller for all state-changing actions in the application.
@@ -17,6 +19,13 @@ export const ActionController = {
       const otherType = type === 'sharp' ? 'flat' : 'sharp';
       appState.display[otherType] = true;
     }
+  },
+
+  toggleDarkMode() {
+    appState.ui.darkMode = !appState.ui.darkMode;
+    document.body.classList.toggle('dark-mode', appState.ui.darkMode);
+    // --- ADDED: Save the preference ---
+    savePreferences({ darkMode: appState.ui.darkMode });
   },
 
   togglePlayback() {

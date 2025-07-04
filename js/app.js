@@ -26,6 +26,7 @@ export default class App {
     const controlCallbacks = {
       onToggleFlat: () => ActionController.toggleAccidental('flat'),
       onToggleSharp: () => ActionController.toggleAccidental('sharp'),
+      onToggleDarkMode: () => ActionController.toggleDarkMode(),
       onTogglePlayback: () => ActionController.togglePlayback(),
       onToggleSidebar: (state) => ActionController.toggleSidebar(state),
       // This is now handled by the responsive logic, but we can leave it for the button

@@ -219,7 +219,8 @@ export default class Belts {
     return this._calcBeltItemSize('pitchBelt', this.elements.pitchBelt, orientation) &&
            this._calcBeltItemSize('degreeBelt', this.elements.degreeBelt, orientation) &&
            this._calcBeltItemSize('chromaticBelt', this.elements.chromaticBelt, orientation) &&
-          this._calcBeltItemSize('intervalBracketsContainer', this.elements.intervalBracketsWrapper, orientation);  }
+           this._calcBeltItemSize('intervalBracketsContainer', this.elements.intervalBracketsWrapper, orientation);
+  }
 
   _calcBeltItemSize(beltId, container, orientation) {
     const size = orientation === 'vertical' ? container.offsetHeight : container.offsetWidth;
@@ -235,6 +236,7 @@ export default class Belts {
         const idx = +cell.dataset.originalIndex;
         const note = CHROMATIC_NOTES[idx];
         const isWhiteKey = PIANO_KEY_COLOUR[note];
+        // --- REVERTED to original static colors ---
         cell.style.background = isWhiteKey ? '#fff' : '#000';
         cell.style.color = isWhiteKey ? '#000' : '#fff';
         cell.innerHTML = chromaticLabels[idx];

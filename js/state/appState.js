@@ -36,8 +36,8 @@ export const appState = {
       sharp: true,
       flat: true,
     },
-    // ADDED: State for UI elements like the sidebar
     ui: {
       sidebarOpen: false,
+      darkMode: false, // --- ADDED THIS LINE ---
     }
   };
