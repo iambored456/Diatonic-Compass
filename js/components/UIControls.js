@@ -4,20 +4,20 @@ import { updateResultText } from '../core/logic.js';
 export default class UIControls {
   constructor(container, state, callbacks) {
     this.state = state;
-    this.callbacks = callbacks; // { onToggleSharp, onToggleFlat, onTogglePlayback, ... }
+    this.callbacks = callbacks; // { onToggleSharp, onToggleFlat, onTogglePlayback, ..., onStartTutorial }
 
     // Find all control elements
     this.elements = {
       resultContainer: container.querySelector('#result-container'),
       resultText: container.querySelector('#result-text'),
-      // UPDATED: Select these via document since they are outside the container
       flatBtn: document.getElementById('flat-btn'),
       sharpBtn: document.getElementById('sharp-btn'),
       settingsBtn: document.getElementById('settings-btn'),
       sidebar: document.getElementById('sidebar'),
       sidebarOverlay: document.getElementById('sidebar-overlay'),
       toggleOrientationBtn: document.getElementById('toggle-orientation-btn'),
-      toggleDarkModeBtn: document.getElementById('toggle-dark-mode-btn'), // --- ADDED ---
+      toggleDarkModeBtn: document.getElementById('toggle-dark-mode-btn'),
+      startTutorialBtn: document.getElementById('start-tutorial-btn'), // --- ADDED ---
     };
     
     this._initListeners();
@@ -27,9 +27,7 @@ export default class UIControls {
     this.elements.flatBtn.addEventListener('click', this.callbacks.onToggleFlat);
     this.elements.sharpBtn.addEventListener('click', this.callbacks.onToggleSharp);
     
-    // The result container itself acts as the play/stop button
     this.elements.resultContainer.addEventListener('click', (e) => {
-        // Prevent button clicks from triggering playback (this logic is now redundant but harmless)
         if (e.target.closest('button')) return;
         this.callbacks.onTogglePlayback();
     });
@@ -41,44 +39,38 @@ export default class UIControls {
     
     this.elements.sidebarOverlay.addEventListener('click', () => {
         if(this.state.ui.sidebarOpen) {
-            this.callbacks.onToggleSidebar(false); // Explicitly close
+            this.callbacks.onToggleSidebar(false);
         }
     });
 
     this.elements.toggleOrientationBtn.addEventListener('click', this.callbacks.onToggleOrientation);
-    this.elements.toggleDarkModeBtn.addEventListener('click', this.callbacks.onToggleDarkMode); // --- ADDED ---
+    this.elements.toggleDarkModeBtn.addEventListener('click', this.callbacks.onToggleDarkMode);
+    this.elements.startTutorialBtn.addEventListener('click', this.callbacks.onStartTutorial); // --- ADDED ---
   }
 
   update() {
     const { display, playback, ui, belts } = this.state;
     const { resultContainer, flatBtn, sharpBtn, resultText, sidebar, sidebarOverlay, settingsBtn, toggleOrientationBtn, toggleDarkModeBtn } = this.elements;
 
-    // Update accidental buttons (this logic remains the same)
     flatBtn.classList.toggle('active', display.flat);
     sharpBtn.classList.toggle('active', display.sharp);
     flatBtn.setAttribute('aria-pressed', String(display.flat));
     sharpBtn.setAttribute('aria-pressed', String(display.sharp));
 
-    // Update playback indicator
     resultContainer.classList.toggle('playback-active', playback.isPlaying);
-
-    // Update result text
     updateResultText(this.state, resultText);
     
-    // Update the orientation toggle button text
     const currentOrientation = belts.orientation;
     const targetOrientation = currentOrientation === 'horizontal' ? 'Vertical' : 'Horizontal';
     if (toggleOrientationBtn.textContent !== targetOrientation) {
         toggleOrientationBtn.textContent = targetOrientation;
     }
     
-    // --- ADDED: Update the theme toggle button text ---
     const themeText = ui.darkMode ? 'Light Mode' : 'Dark Mode';
     if (toggleDarkModeBtn.textContent !== themeText) {
         toggleDarkModeBtn.textContent = themeText;
     }
 
-    // Update sidebar visibility
     const isSidebarOpen = ui.sidebarOpen;
     sidebar.classList.toggle('open', isSidebarOpen);
     sidebar.setAttribute('aria-hidden', String(!isSidebarOpen));
@@ -86,7 +78,6 @@ export default class UIControls {
     settingsBtn.setAttribute('aria-expanded', String(isSidebarOpen));
 
     if (!isSidebarOpen) {
-        // Ensure focus is managed correctly when closing
         if (document.activeElement === this.elements.toggleOrientationBtn) {
             settingsBtn.focus();
         }

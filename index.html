@@ -32,10 +32,13 @@ Quinn Fleming's<br>Diatonic Compass
 <button id="sharp-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle sharp names">♯</button>
 </div>
 </div>
-<!-- --- ADDED THIS ENTIRE BLOCK --- -->
 <div class="sidebar-setting">
   <span>Theme</span>
   <button id="toggle-dark-mode-btn" class="sidebar-btn">Dark Mode</button>
+</div>
+<div class="sidebar-setting">
+    <span>Tutorial</span>
+    <button id="start-tutorial-btn" class="sidebar-btn">Start</button>
 </div>
 </div>
 </div>
@@ -71,6 +74,15 @@ The order here (wheel, belts, result) defines the layout for the default "tall" 
 <div id="result-text" role="status" aria-live="polite"></div>
 </div>
 </div>
+
+<!-- Tutorial Elements -->
+<div id="tutorial-mask"></div>
+<div id="tutorial-bubble" role="dialog" aria-labelledby="tutorial-text" aria-modal="true">
+    <div id="tutorial-text" aria-live="polite"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

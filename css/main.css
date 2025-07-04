@@ -116,7 +116,7 @@ canvas {
   color: var(--color-text-primary); /* UPDATED */
   box-shadow: 0 0 0.3125rem rgba(0,0,0,.1);
   flex-shrink: 0;
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
   justify-self: center; 
 }
 
@@ -273,6 +273,47 @@ canvas {
 #sidebar-overlay.visible {
   opacity: 1;
   pointer-events: all;
+}
+
+/* --- TUTORIAL STYLES --- */
+#tutorial-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    opacity: 0; /* GSAP will control this */
+    visibility: hidden; /* GSAP will control this */
+    pointer-events: none;
+    /* The initial clip-path covers the whole screen. We will animate this. */
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+}
+
+#tutorial-bubble {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 2001; /* Must be higher than the mask */
+    opacity: 0;
+    visibility: hidden;
+    max-width: 90%;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border: 1px solid #ccc;
+}
+
+#tutorial-text {
+    font-size: 1.2rem;
+    text-align: center;
+}
+#tutorial-text strong {
+    color: #33c6dc;
 }
 
 /* --- SOLUTION FOR WIDE SCREENS --- */
