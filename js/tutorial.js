@@ -19,9 +19,7 @@ function speak(text) {
     });
 }
 
-/**
- * Creates a "spotlight" hole in the mask for the target element.
- */
+
 function showSpotlight(targetSelector) {
     const target = document.querySelector(targetSelector);
     if (!target) return;
@@ -35,9 +33,7 @@ function showSpotlight(targetSelector) {
     gsap.to("#tutorial-mask", { clipPath: clipPathValue, duration: 0.4, ease: "power2.inOut" });
 }
 
-/**
- * Closes the spotlight hole.
- */
+
 function hideSpotlight() {
     gsap.to("#tutorial-mask", { 
         clipPath: "polygon(0% 0%, 0% 100%, 50% 100%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 100%, 100% 100%, 100% 0%, 0% 0%)",
