@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Interactive Diatonic Compass - A visual music theory tool for exploring keys, modes, and scales with keyboard navigation and screen reader support." />
+<meta name="keywords" content="music theory, diatonic compass, scales, modes, accessibility, keyboard navigation" />
+<meta name="author" content="Quinn Fleming" />
+
+<!-- Accessibility meta tags -->
+<meta name="theme-color" content="#33c6dc" />
+<meta name="color-scheme" content="light dark" />
+
 <!-- Favicons -->
 <link rel="icon" type="image/x-icon" href="public/favicon.ico"/>
 <link rel="icon" type="image/svg+xml" href="public/favicon.svg" />
@@ -11,78 +19,325 @@
 <link rel="icon" type="image/png" sizes="512x512" href="public/web-app-manifest-512x512.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png" />
 <link rel="manifest" href="public/site.webmanifest" />
-<title>Diatonic Compass</title>
+
+<title>Diatonic Compass - Interactive Music Theory Tool</title>
+
+<!-- Main stylesheets -->
 <link rel="stylesheet" href="css/main.css" />
 <link rel="stylesheet" href="css/belts.css" />
+<link rel="stylesheet" href="css/accessibility.css" />
+
+<!-- Accessibility enhancements -->
+<style>
+  /* Critical accessibility styles loaded inline to prevent FOUC */
+  .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+  
+  *:focus {
+    outline: 2px solid #33c6dc;
+    outline-offset: 2px;
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
 </head>
 <body>
-<button id="settings-btn" aria-label="Open settings sidebar" aria-controls="sidebar" aria-expanded="false">⚙️</button>
-<div id="sidebar" role="complementary" aria-hidden="true">
-<div class="sidebar-content">
-Quinn Fleming's<br>Diatonic Compass
-<br><br>
-<div class="sidebar-setting">
-<span>Orientation</span>
-<button id="toggle-orientation-btn" class="sidebar-btn">Vertical</button>
-</div>
-<div class="sidebar-setting">
-<span>Accidentals</span>
-<div class="sidebar-button-group">
-<button id="flat-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle flat names">♭</button>
-<button id="sharp-btn" class="accidental-toggle" aria-pressed="true" aria-label="Toggle sharp names">♯</button>
-</div>
-</div>
-<div class="sidebar-setting">
-  <span>Theme</span>
-  <button id="toggle-dark-mode-btn" class="sidebar-btn">Dark Mode</button>
-</div>
-<div class="sidebar-setting">
-    <span>Tutorial</span>
-    <button id="start-tutorial-btn" class="sidebar-btn">Start</button>
-</div>
-</div>
-</div>
-<div id="sidebar-overlay"></div>
-<!-- END: Sidebar Elements -->
-<div class="main-container" role="application" aria-label="Diatonic Compass interactive widget">
-<!--
-STRUCTURE CHANGE: The wrapper is gone. Wheel, Belts, and Result are now siblings.
-The order here (wheel, belts, result) defines the layout for the default "tall" screen view.
--->
-<div class="wheel-container">
-<canvas id="chromaWheel" aria-label="Diatonic Compass concentric rings"></canvas>
-</div>
-<div class="belts-container">
-<div id="belt-cursor" aria-hidden="true"></div>
-<div id="belt-flash-overlay" aria-hidden="true"></div>
-<div class="belt pitch-belt" id="pitchBelt" role="listbox" aria-label="Pitch-name belt"></div>
-<div class="belt degree-belt" id="degreeBelt" role="listbox" aria-label="Scale-degree belt"></div>
 
-<!-- The interval brackets are decorative and controlled by the degree belt -->
-<div class="interval-brackets-wrapper" aria-hidden="true">
-  <div class="interval-brackets-container" id="intervalBracketsContainer" role="presentation"></div>
+<!-- Skip navigation link -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Settings button with enhanced accessibility -->
+<button id="settings-btn" 
+        aria-label="Open settings sidebar" 
+        aria-controls="sidebar" 
+        aria-expanded="false"
+        aria-describedby="settings-btn-help">⚙️</button>
+<div id="settings-btn-help" class="sr-only">
+  Opens a panel with display options, theme settings, and keyboard shortcuts
 </div>
 
-<div class="belt chromatic-belt" id="chromaticBelt" role="listbox" aria-label="Chromatic-index belt">
-  <!-- Layer 1 (Bottom): The color track, moves with the Degree ring -->
-  <div id="chromatic-colors-track" class="belt-track"></div>
-  <!-- Layer 2 (Top): The numbers track, moves with the Chromatic ring -->
-  <div id="chromatic-numbers-track" class="belt-track"></div>
-</div>
-</div>
-<div id="result-container">
-<div id="result-text" role="status" aria-live="polite"></div>
-</div>
-</div>
+<!-- Enhanced sidebar with better structure -->
+<nav id="sidebar" 
+     role="complementary" 
+     aria-hidden="true"
+     aria-labelledby="sidebar-title">
+  <div class="sidebar-content">
+    <h2 id="sidebar-title">Settings</h2>
+    <p class="sr-only">Quinn Fleming's Diatonic Compass - Configuration options</p>
+    
+    <!-- Orientation setting -->
+    <div class="sidebar-setting">
+      <span id="orientation-label">Layout Orientation</span>
+      <button id="toggle-orientation-btn" 
+              class="sidebar-btn"
+              aria-describedby="orientation-help">Vertical</button>
+      <div id="orientation-help" class="sr-only">
+        Switch between horizontal and vertical layout of the interface
+      </div>
+    </div>
+    
+    <!-- Accidentals setting -->
+    <fieldset class="sidebar-setting">
+      <legend>Note Name Display</legend>
+      <div class="sidebar-button-group" role="group" aria-labelledby="accidentals-legend">
+        <span id="accidentals-legend" class="sr-only">Choose which note names to display</span>
+        <button id="flat-btn" 
+                class="accidental-toggle" 
+                aria-pressed="true" 
+                aria-label="Show flat note names"
+                aria-describedby="flat-help">♭</button>
+        <div id="flat-help" class="sr-only">
+          Toggle display of flat note names like D-flat, E-flat
+        </div>
+        <button id="sharp-btn" 
+                class="accidental-toggle" 
+                aria-pressed="true" 
+                aria-label="Show sharp note names"
+                aria-describedby="sharp-help">♯</button>
+        <div id="sharp-help" class="sr-only">
+          Toggle display of sharp note names like C-sharp, F-sharp
+        </div>
+      </div>
+    </fieldset>
+    
+    <!-- Theme setting -->
+    <div class="sidebar-setting">
+      <span id="theme-label">Color Theme</span>
+      <button id="toggle-dark-mode-btn" 
+              class="sidebar-btn"
+              aria-describedby="theme-help">Dark Mode</button>
+      <div id="theme-help" class="sr-only">
+        Switch between light and dark color themes
+      </div>
+    </div>
+    
+    <!-- Tutorial setting -->
+    <div class="sidebar-setting">
+      <span id="tutorial-label">Learning</span>
+      <button id="start-tutorial-btn" 
+              class="sidebar-btn"
+              aria-describedby="tutorial-help">Start Tutorial</button>
+      <div id="tutorial-help" class="sr-only">
+        Begin an interactive tutorial explaining how to use the Diatonic Compass
+      </div>
+    </div>
+    
+    <!-- Accessibility shortcuts info -->
+    <div class="sidebar-setting">
+      <span id="accessibility-label">Accessibility</span>
+      <div class="sidebar-info" aria-describedby="accessibility-info">
+        <div id="accessibility-info" class="sr-only">
+          Keyboard navigation: Use arrow keys to rotate rings, space to play scale, H for help
+        </div>
+        <small>Press H for keyboard shortcuts</small>
+      </div>
+    </div>
+  </div>
+</nav>
 
-<!-- Tutorial Elements -->
-<div id="tutorial-mask"></div>
-<div id="tutorial-bubble" role="dialog" aria-labelledby="tutorial-text" aria-modal="true">
-    <div id="tutorial-text" aria-live="polite"></div>
-</div>
+<!-- Sidebar overlay for mobile -->
+<div id="sidebar-overlay" aria-hidden="true"></div>
 
+<!-- Main application content -->
+<main class="main-container" 
+      id="main-content"
+      role="application" 
+      aria-label="Diatonic Compass interactive music theory tool">
+  
+  <!-- Wheel container with enhanced accessibility -->
+  <section class="wheel-container" aria-labelledby="wheel-title">
+    <h2 id="wheel-title" class="sr-only">Interactive Compass Wheel</h2>
+    <canvas id="chromaWheel" 
+            aria-label="Three-ring musical compass: outer ring for pitch classes, middle ring for scale degrees, inner ring for chromatic positions"
+            aria-describedby="wheel-instructions"
+            tabindex="0"
+            role="img"></canvas>
+    <div id="wheel-instructions" class="sr-only">
+      Use arrow keys to rotate the rings and explore different musical keys and modes. 
+      Left and right arrows control the outer pitch ring, 
+      up and down arrows control the middle degree ring, 
+      shift plus arrows control the inner chromatic ring.
+    </div>
+  </section>
+  
+  <!-- Belts container with enhanced structure -->
+  <section class="belts-container" aria-labelledby="belts-title">
+    <h2 id="belts-title" class="sr-only">Musical Information Belts</h2>
+    
+    <!-- Visual cursor and flash overlay -->
+    <div id="belt-cursor" aria-hidden="true"></div>
+    <div id="belt-flash-overlay" aria-hidden="true"></div>
+    
+    <!-- Pitch belt -->
+    <div class="belt pitch-belt" 
+         id="pitchBelt" 
+         role="listbox" 
+         aria-label="Pitch names belt"
+         aria-describedby="pitch-belt-desc"
+         tabindex="0">
+      <div id="pitch-belt-desc" class="sr-only">
+        Shows pitch class names like C, D, E. Drag or use left/right arrow keys to change.
+      </div>
+    </div>
+    
+    <!-- Degree belt -->
+    <div class="belt degree-belt" 
+         id="degreeBelt" 
+         role="listbox" 
+         aria-label="Scale degrees belt"
+         aria-describedby="degree-belt-desc"
+         tabindex="0">
+      <div id="degree-belt-desc" class="sr-only">
+        Shows scale degree numbers like 1, 2, 3. Drag or use up/down arrow keys to change mode.
+      </div>
+    </div>
+
+    <!-- Interval brackets (decorative) -->
+    <div class="interval-brackets-wrapper" 
+         aria-hidden="true" 
+         role="presentation">
+      <div class="interval-brackets-container" 
+           id="intervalBracketsContainer" 
+           role="presentation"></div>
+    </div>
+
+    <!-- Chromatic belt -->
+    <div class="belt chromatic-belt" 
+         id="chromaticBelt" 
+         role="listbox" 
+         aria-label="Chromatic positions belt"
+         aria-describedby="chromatic-belt-desc"
+         tabindex="0">
+      <div id="chromatic-belt-desc" class="sr-only">
+        Shows chromatic position numbers 0 through 11. Drag or use shift+arrow keys to change perspective.
+      </div>
+      <!-- Color track (moves with degree ring) -->
+      <div id="chromatic-colors-track" 
+           class="belt-track" 
+           aria-hidden="true"></div>
+      <!-- Numbers track (moves with chromatic ring) -->
+      <div id="chromatic-numbers-track" 
+           class="belt-track"
+           aria-hidden="true"></div>
+    </div>
+  </section>
+  
+  <!-- Result display with enhanced accessibility -->
+  <section id="result-container" 
+           role="region" 
+           aria-label="Current musical key and mode"
+           aria-describedby="result-instructions"
+           tabindex="0">
+    <div id="result-text" 
+         role="status" 
+         aria-live="polite"
+         aria-atomic="true"></div>
+    <div id="result-instructions" class="sr-only">
+      Shows the current key and mode. Click or press space to play the scale.
+    </div>
+  </section>
+</main>
+
+<!-- Tutorial elements with enhanced accessibility -->
+<div id="tutorial-mask" 
+     aria-hidden="true" 
+     role="presentation"></div>
+<dialog id="tutorial-bubble" 
+        role="dialog" 
+        aria-labelledby="tutorial-text" 
+        aria-modal="true"
+        aria-describedby="tutorial-instructions">
+  <div id="tutorial-text" aria-live="assertive"></div>
+  <div id="tutorial-instructions" class="sr-only">
+    Tutorial dialog. Follow the spoken instructions and interact with the highlighted elements.
+  </div>
+</dialog>
+
+<!-- Status messages for screen readers -->
+<div id="status-messages" aria-live="polite" aria-atomic="false" class="sr-only"></div>
+<div id="urgent-messages" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+
+<!-- Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
+
+<!-- Feature detection and graceful degradation -->
+<script>
+  // Feature detection for graceful degradation
+  if (!window.AudioContext && !window.webkitAudioContext) {
+    console.warn('Web Audio API not supported - audio features will be disabled');
+  }
+  
+  if (!window.PointerEvent) {
+    console.warn('Pointer events not supported - using fallback interaction');
+  }
+  
+  // Accessibility preference detection
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.body.classList.add('reduced-motion');
+  }
+  
+  if (window.matchMedia('(prefers-contrast: high)').matches) {
+    document.body.classList.add('high-contrast');
+  }
+  
+  // Error boundary for the main application
+  window.addEventListener('error', function(e) {
+    console.error('Application error:', e.error);
+    // Could show user-friendly error message here
+  });
+  
+  window.addEventListener('unhandledrejection', function(e) {
+    console.error('Unhandled promise rejection:', e.reason);
+    e.preventDefault();
+  });
+</script>
+
 <script type="module" src="js/main.js"></script>
+
+<!-- Structured data for search engines -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Diatonic Compass",
+  "description": "Interactive music theory tool for exploring keys, modes, and scales",
+  "url": "https://iambored456.github.io/Diatonic-Compass/",
+  "author": {
+    "@type": "Person",
+    "name": "Quinn Fleming"
+  },
+  "applicationCategory": "EducationApplication",
+  "operatingSystem": "Web Browser",
+  "accessibilityFeature": [
+    "alternativeText",
+    "keyboardNavigation",
+    "screenReaderSupport",
+    "highContrastDisplay",
+    "reducedMotionSupport"
+  ],
+  "accessibilityControl": [
+    "keyboardControl",
+    "mouseControl",
+    "touchControl"
+  ]
+}
+</script>
+
 </body>
 </html>

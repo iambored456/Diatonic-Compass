@@ -1,29 +1,80 @@
 {
   "name": "diatonic-compass",
-  "version": "1.0.0",
-  "description": "Live Link: https://iambored456.github.io/Diatonic-Compass/",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "An interactive music education tool for exploring diatonic relationships",
+  "main": "js/main.js",
+  "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint js/ --ext .js",
+    "lint:fix": "eslint js/ --ext .js --fix",
+    "format": "prettier --write js/",
+    "type-check": "tsc --noEmit",
+    "analyze": "vite-bundle-analyzer",
+    "clean": "rm -rf docs dist node_modules/.vite",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/iambored456/Diatonic-Compass.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "keywords": [
+    "music",
+    "education",
+    "theory",
+    "diatonic",
+    "interactive",
+    "web-audio",
+    "canvas",
+    "music-visualization"
+  ],
+  "author": "Quinn Fleming",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/iambored456/Diatonic-Compass/issues"
   },
   "homepage": "https://github.com/iambored456/Diatonic-Compass#readme",
   "dependencies": {
-    "gsap": "^3.13.0",
-    "tonal": "^6.4.2",
-    "tone": "^15.1.22",
-    "vite": "^6.3.5"
+    "gsap": "^3.13.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "husky": "^8.0.3",
+    "jsdom": "^23.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.2.0",
+    "vite": "^6.3.5",
+    "vite-bundle-analyzer": "^0.7.0",
+    "vitest": "^1.0.0"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,html,md}": [
+      "prettier --write"
+    ]
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }

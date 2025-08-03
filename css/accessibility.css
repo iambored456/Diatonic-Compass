@@ -1,0 +1,366 @@
+/* (file path: css/accessibility.css) */
+
+/* === ACCESSIBILITY ENHANCEMENTS === */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  padding: 8px;
+  z-index: 10000;
+  text-decoration: none;
+  border-radius: 4px;
+  border: 2px solid #33c6dc;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Enhanced focus indicators */
+*:focus {
+  outline: 2px solid #33c6dc;
+  outline-offset: 2px;
+}
+
+/* Specific focus styles for interactive elements */
+canvas:focus,
+.belt:focus,
+button:focus,
+.accidental-toggle:focus {
+  outline: 3px solid #33c6dc;
+  outline-offset: 3px;
+}
+
+/* Focus visible only for keyboard navigation */
+.js-focus-visible *:focus:not(.focus-visible) {
+  outline: none;
+}
+
+.js-focus-visible *:focus.focus-visible {
+  outline: 3px solid #33c6dc;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-background: #000000;
+    --color-surface: #ffffff;
+    --color-text-primary: #000000;
+    --color-text-secondary: #000000;
+  }
+
+  body.dark-mode {
+    --color-background: #ffffff;
+    --color-surface: #000000;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #ffffff;
+  }
+
+  canvas,
+  .belt,
+  #result-container {
+    border: 2px solid currentColor;
+  }
+
+  .accidental-toggle {
+    border: 2px solid currentColor;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+
+  .accidental-toggle.active {
+    background: var(--color-text-primary);
+    color: var(--color-surface);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep important functional animations but make them faster */
+  .belt-track,
+  canvas {
+    transition-duration: 0.1s !important;
+  }
+
+  /* Disable tutorial animations in reduced motion mode */
+  #tutorial-mask,
+  #tutorial-bubble {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Larger touch targets for mobile accessibility */
+@media (max-width: 768px) {
+  button,
+  .accidental-toggle,
+  #settings-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Increase touch target for belts on mobile */
+  .belt {
+    min-height: 44px;
+  }
+}
+
+/* Print styles for accessibility */
+@media print {
+  /* Hide interactive elements that don't make sense in print */
+  #settings-btn,
+  .accidental-toggle,
+  canvas,
+  .belt {
+    display: none;
+  }
+
+  /* Show text-based information */
+  #result-container {
+    border: 2px solid black;
+    background: white;
+    color: black;
+    page-break-inside: avoid;
+  }
+
+  /* Add explanatory text for print */
+  #result-container::after {
+    content: " (Interactive musical interface - visit website for full experience)";
+    font-size: 0.8em;
+    font-style: italic;
+  }
+}
+
+/* Color blind friendly indicators */
+.color-blind-mode {
+  /* Use patterns and shapes in addition to color */
+}
+
+.color-blind-mode .accidental-toggle.active::before {
+  content: "✓ ";
+  font-weight: bold;
+}
+
+.color-blind-mode .belt-cell {
+  position: relative;
+}
+
+.color-blind-mode .belt-cell[data-note-type="sharp"]::after {
+  content: "♯";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.7em;
+  opacity: 0.7;
+}
+
+.color-blind-mode .belt-cell[data-note-type="flat"]::after {
+  content: "♭";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.7em;
+  opacity: 0.7;
+}
+
+/* Keyboard navigation indicators */
+.keyboard-navigation-active {
+  /* Show focus more prominently when navigating with keyboard */
+}
+
+.keyboard-navigation-active *:focus {
+  outline: 3px solid #33c6dc;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(51, 198, 220, 0.3);
+}
+
+/* Loading and error states for accessibility */
+.loading {
+  position: relative;
+}
+
+.loading::after {
+  content: "Loading...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  padding: 1rem;
+  border-radius: 4px;
+  z-index: 1000;
+}
+
+.error-state {
+  border: 2px solid #dc3545;
+  background: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.error-state::before {
+  content: "⚠ ";
+  font-weight: bold;
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-indicator.active {
+  background: #28a745;
+}
+
+.status-indicator.inactive {
+  background: #6c757d;
+}
+
+.status-indicator.error {
+  background: #dc3545;
+}
+
+/* Text scaling support */
+@media (min-resolution: 1.5dppx) {
+  /* Ensure text remains crisp at high DPI */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Support for Windows High Contrast mode */
+@media (-ms-high-contrast: active) {
+  canvas,
+  .belt,
+  #result-container,
+  button {
+    border: 1px solid;
+  }
+
+  .accidental-toggle.active {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+/* Dark mode accessibility improvements */
+body.dark-mode {
+  /* Ensure sufficient contrast in dark mode */
+}
+
+body.dark-mode *:focus {
+  outline-color: #66d9ef; /* Slightly brighter blue for dark mode */
+}
+
+body.dark-mode .error-state {
+  background: #2d1b1f;
+  color: #f5c6cb;
+  border-color: #842029;
+}
+
+/* Animation control for accessibility */
+.animation-disabled * {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+
+/* Responsive text sizing */
+@media (max-width: 480px) {
+  html {
+    font-size: clamp(16px, 4vw, 20px);
+  }
+}
+
+/* Voice control improvements */
+[data-voice-command] {
+  /* Elements that can be activated by voice commands */
+}
+
+/* Gesture navigation support */
+.gesture-navigation {
+  touch-action: manipulation;
+}
+
+/* RTL language support preparation */
+[dir="rtl"] {
+  /* RTL layouts for international accessibility */
+}
+
+[dir="rtl"] .sidebar {
+  left: auto;
+  right: 0;
+  transform: translateX(100%);
+}
+
+[dir="rtl"] .sidebar.open {
+  transform: translateX(0);
+}
+
+/* Customizable text spacing for dyslexia support */
+.dyslexia-friendly {
+  line-height: 1.6;
+  letter-spacing: 0.12em;
+  word-spacing: 0.16em;
+}
+
+.dyslexia-friendly p {
+  margin-bottom: 1.5em;
+}
+
+/* Support for alternative input methods */
+.switch-navigation *:focus {
+  outline: 4px solid #ffff00;
+  outline-offset: 4px;
+  background: rgba(255, 255, 0, 0.1);
+}
+
+/* Cognitive accessibility - simplified interface mode */
+.simplified-mode .advanced-controls {
+  display: none;
+}
+
+.simplified-mode button {
+  font-size: 1.2em;
+  padding: 1em;
+  min-height: 48px;
+}
+
+.simplified-mode #result-container {
+  font-size: 2em;
+  padding: 1em;
+}
