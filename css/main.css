@@ -47,7 +47,15 @@ body.dark-mode {
 }
 
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 
 html {
   font-size: clamp(14px, 1.2vw + 0.5rem, 18px);
@@ -74,11 +82,39 @@ body {
   width: 100%;
   height: 100%;
   max-width: 50rem;
-  display: grid;
-  grid-template-rows: 1fr auto auto; 
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   min-height: 0; 
   padding:0.2rem;
+}
+
+.main-container .wheel-container {
+  flex: 1;
+  min-height: 0;
+}
+
+.main-container .belts-container {
+  flex: none;
+}
+
+.main-container #result-container {
+  flex: none;
+}
+
+/* Styling for individual belts when moved out of belts-container */
+.main-container > .belt {
+  flex: 0 0 auto; /* Don't grow or shrink */
+  margin: 0.15rem 0; /* Half the gap from belts-container */
+  height: clamp(2rem, 4rem, 8rem); /* Maintain belt height */
+  width: 100%; /* Full width available */
+}
+
+.main-container > .interval-brackets-wrapper {
+  flex: 0 0 auto; /* Don't grow or shrink */
+  margin: 0.15rem 0;
+  height: 1.875rem; /* Fixed height for interval brackets */
+  width: 100%; /* Full width available */
 }
 
 .wheel-container {
@@ -91,15 +127,39 @@ body {
   min-width: 0;
 }
 
+/* Constrain wheel in horizontal mode when it's a flex child */
+.main-container:not(.vertical-layout) .wheel-container {
+  flex: 1 1 auto;
+  max-height: 100%;
+  max-width: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+}
+
 canvas {
   aspect-ratio: 1 / 1;
-  max-width: 100%;
-  max-height: 100%;
   border-radius: 50%;
   background: var(--color-surface); /* UPDATED */
   border: var(--border-width) solid #ccc;
   touch-action: none;
   transition: background-color 0.3s;
+}
+
+/* Vertical mode: canvas should fill its grid area */
+.main-container.vertical-layout canvas {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+/* Horizontal mode: canvas should respect flex constraints */
+.main-container:not(.vertical-layout) canvas {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  flex-shrink: 1; /* Allow shrinking in flex layout */
 }
 
 #result-container {
@@ -118,6 +178,7 @@ canvas {
   flex-shrink: 0;
   transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
   justify-self: center; 
+  margin: 0 auto; /* Center align in horizontal flexbox mode */
 }
 
 #result-container.playback-active {
@@ -184,13 +245,12 @@ canvas {
   height: 100%;
   width: 18.75rem;
   max-width: 80%;
-  background: var(--color-surface); /* UPDATED */
+  background: var(--color-surface);
   box-shadow: 0.25rem 0 0.9375rem rgba(0,0,0,0.2);
   z-index: 1002;
   transform: translateX(-100%);
   transition: transform 0.3s, background-color 0.3s;
   display: flex;
-  padding-top: 5rem;
   align-items: flex-start;
   justify-content: center;
 }
@@ -198,60 +258,138 @@ canvas {
   transform: translateX(0);
 }
 .sidebar-content {
-  font-size: 1.5rem;
-  color: var(--color-text-primary); /* UPDATED */
-  text-align: center;
+  font-size: 1rem;
+  color: var(--color-text-primary);
   line-height: 1.5;
-  font-weight: bold;
-  padding: 1.25rem;
+  padding: 1.5rem;
+  padding-top: 0;
   width: 100%;
   transition: color 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+#sidebar-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar-subheader {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+.tutorial-btn {
+  background: #33c6dc;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-medium);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tutorial-btn:hover {
+  background: #2a9fb5;
 }
 .sidebar-btn {
   background: #e0e0e0;
   border: 1px solid #ccc;
   color: #333;
-  font-size: 1.125rem;
+  font-size: 1rem;
   border-radius: var(--radius-small);
   padding: var(--space-xs) var(--space-s);
   cursor: pointer;
-  width: 100%;
-  margin-top: 1.25rem;
   transition: background-color 0.2s;
 }
 .sidebar-btn:hover {
   background-color: #d0d0d0;
 }
 
-.sidebar-setting {
+/* Modern toggle switches */
+.toggle-switch-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  background: #e0e0e0;
+  border-radius: 1.5rem;
+  padding: 0.125rem;
+  min-width: 200px;
+  height: 2rem;
+  cursor: pointer;
+}
+
+.toggle-switch input[type="radio"] {
+  display: none;
+}
+
+.toggle-switch label {
+  flex: 1;
+  display: flex;
   align-items: center;
-  width: 100%;
-  margin-top: 1.25rem;
-  padding: 0 var(--space-xs);
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  border-radius: 1.25rem;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
 }
 
-.sidebar-setting span {
-  font-size: 1.125rem;
-  font-weight: normal;
+.toggle-switch input[type="radio"]:checked + label {
+  color: white;
 }
 
-.sidebar-setting .sidebar-btn {
-  margin-top: 0;
-  width: auto;
-  flex-basis: 50%;
+.toggle-slider {
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: calc(50% - 0.125rem);
+  height: calc(100% - 0.25rem);
+  background: #33c6dc;
+  border-radius: 1.25rem;
+  transition: transform 0.2s ease;
+  z-index: 1;
 }
 
-.sidebar-button-group {
+.toggle-switch input[name="orientation"]:nth-of-type(2):checked ~ .toggle-slider,
+.toggle-switch input[name="theme"]:nth-of-type(2):checked ~ .toggle-slider {
+  transform: translateX(100%);
+}
+
+/* Accidentals controls */
+.accidentals-controls {
   display: flex;
-  gap: var(--space-xs);
-  flex-basis: 50%;
-  justify-content: flex-end;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
 }
 
-.sidebar-button-group .accidental-toggle {
-  padding: var(--space-xs);
+.accidentals-controls .accidental-toggle {
   font-size: 1.25rem;
   line-height: 1;
   width: 2.5rem;
@@ -327,22 +465,127 @@ canvas {
   gap: var(--space-s);
   max-width: none;
   justify-content: center;
+  align-content: center;
 }
 
 .main-container.vertical-layout .belts-container {
   grid-area: belts;
+  justify-self: center;
 }
 
 .main-container.vertical-layout .wheel-container {
   grid-area: wheel;
+  justify-self: center;
 }
 
 .main-container.vertical-layout #result-container {
   grid-area: result;
-  width: 100%;
-  max-width: none;
+  justify-self: center;
+  width: auto;
+  max-width: 28.125rem;
 }
 
 .main-container.vertical-layout .wheel-and-result-wrapper {
   display: none;
 }
+
+/* Accessibility text section */
+.accessibility-text {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.accessibility-text p {
+  margin: 0.25rem 0;
+}
+
+.accessibility-text strong {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.accessibility-text em {
+  font-style: italic;
+  color: #666;
+}
+
+/* Sidebar credit */
+.sidebar-credit {
+  text-align: center;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.sidebar-credit small {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+/* Dark mode adjustments for new elements */
+body.dark-mode .toggle-switch {
+  background: #444;
+}
+
+body.dark-mode .toggle-switch label {
+  color: #ccc;
+}
+
+body.dark-mode .toggle-switch input[type="radio"]:checked + label {
+  color: white;
+}
+
+body.dark-mode .tutorial-btn {
+  background: #33c6dc;
+}
+
+body.dark-mode .tutorial-btn:hover {
+  background: #2a9fb5;
+}
+
+body.dark-mode .accessibility-text em {
+  color: #999;
+}
+
+body.dark-mode .sidebar-credit {
+  border-top-color: #444;
+}
+
+body.dark-mode .sidebar-credit small {
+  color: #999;
+}
+
+/* Keyboard key styling */
+.key {
+  display: inline-block;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: #333;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  margin: 0 1px;
+}
+
+body.dark-mode .key {
+  background: #444;
+  border-color: #666;
+  color: #e0e0e0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Invert result container colors in dark mode */
+body.dark-mode #result-container {
+  background: #e0e0e0; /* Light gray background */
+  color: #000000; /* Black text */
+  border: 1px solid #ccc; /* Light border */
+}
+
+body.dark-mode #result-container.playback-active {
+  background-color: #A5D6A7; /* Keep same green for playback */
+  color: #000000; /* Ensure black text on green */
+}
+

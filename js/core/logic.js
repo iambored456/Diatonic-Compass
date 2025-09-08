@@ -39,7 +39,7 @@ function resultCacheKey([state]) {
  * @param {boolean} flat - Whether flat names are enabled
  * @returns {string} Processed label
  */
-function processLabel(label, sharp, flat) {
+function applyAccidentalPreference(label, sharp, flat) {
   try {
     if (!label || !label.includes('/')) {
       return label || '';
@@ -85,8 +85,8 @@ function _generateDisplayLabels(state) {
     }
 
     // Process all labels
-    const chromaticLabels = CHROMATIC_NOTES.map(label => processLabel(label, sharp, flat));
-    const diatonicLabels = DIATONIC_INTERVALS.map(label => processLabel(label, sharp, flat));
+    const chromaticLabels = CHROMATIC_NOTES.map(label => applyAccidentalPreference(label, sharp, flat));
+    const diatonicLabels = DIATONIC_INTERVALS.map(label => applyAccidentalPreference(label, sharp, flat));
     
     // Validate results
     if (chromaticLabels.length !== 12 || diatonicLabels.length !== 12) {

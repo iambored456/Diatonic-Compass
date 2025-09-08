@@ -1,8 +1,8 @@
 // (file path: js/components/Belts.js)
 
-import { ANGLE_STEP, TAU, DIATONIC_DEGREE_INDICES, MAJOR_SCALE_INTERVAL_STEPS, CHROMATIC_NOTES, PIANO_KEY_COLOUR, FIXED_INTERVAL_COLOUR } from '../core/constants.js';
+import { ANGLE_STEP, TAU, DIATONIC_DEGREE_INDICES, MAJOR_SCALE_INTERVAL_STEPS, CHROMATIC_NOTES, PIANO_KEY_COLOUR, FIXED_INTERVAL_COLOUR, CHROMATIC_DIVISIONS } from '../core/constants.js';
 import { snapRing, snapChromaticAndSettleMode, snapDegreeToDiatonic } from '../core/animation.js';
-import { setRingAngle, coRotateRings } from '../core/actions.js';
+import { setRingAngle, rotateCoupledRings } from '../core/actions.js';
 import { normAngle } from '../core/math.js';
 import { getContrastColor } from '../core/color.js';
 
@@ -29,6 +29,20 @@ export default class Belts {
     this._initInteraction();
   }
 
+  // --- Ring-to-Belt Conversion Helper ---
+  
+  /**
+   * Calculate the conversion factor from ring angle (radians) to belt distance (pixels)
+   * This is the core relationship between circular rings and linear belts
+   */
+  _calculateRingAngleToBeltPixelsRatio(beltCellWidth) {
+    if (!beltCellWidth || beltCellWidth <= 0) {
+      console.warn('Invalid beltCellWidth for ring-to-belt conversion:', beltCellWidth);
+      return 0;
+    }
+    return (CHROMATIC_DIVISIONS * beltCellWidth) / TAU;
+  }
+
   // --- Public API ---
 
   update(labels, highlightPattern) {
@@ -39,7 +53,7 @@ export default class Belts {
       this._setupAllBelts(diatonicLabels, chromaticLabels);
       
       requestAnimationFrame(() => {
-        const sizesCalculated = this._calculateAllItemSizes(orientation);
+        const sizesCalculated = this._calculateAllBeltCellWidths(orientation);
         if (sizesCalculated) {
           this.state.belts.init = true;
         }
@@ -57,15 +71,16 @@ export default class Belts {
     let visualChromatic = orientation === 'vertical' ? -chromatic : chromatic;
     let visualHighlight = orientation === 'vertical' ? -highlightPosition : highlightPosition;
 
-    this._updateTrackPosition(tracks.pitchBelt, visualPitchClass, itemSize.pitchBelt, orientation);
-    this._updateTrackPosition(tracks.degreeBelt, visualDegree, itemSize.degreeBelt, orientation);
-    this._updateTrackPosition(tracks.chromaticColors, visualHighlight, itemSize.chromaticBelt, orientation);
-    this._updateTrackPosition(tracks.chromaticNumbers, visualChromatic, itemSize.chromaticBelt, orientation);
+    this._positionBeltFromRingAngle(tracks.pitchBelt, visualPitchClass, itemSize.pitchBelt, orientation);
+    this._positionBeltFromRingAngle(tracks.degreeBelt, visualDegree, itemSize.degreeBelt, orientation);
+    this._positionBeltFromRingAngle(tracks.chromaticColors, visualHighlight, itemSize.chromaticBelt, orientation);
+    this._positionBeltFromRingAngle(tracks.chromaticNumbers, visualChromatic, itemSize.chromaticBelt, orientation);
     
-    this._updateIntervalBracketsPosition(visualDegree, itemSize.degreeBelt, orientation);
-    this._updateCursorPosition(visualChromatic, itemSize.chromaticBelt, orientation);
-    this._updatePlaybackFlash();
+    this._positionIntervalBeltFromDegreeRing(visualDegree, itemSize.degreeBelt, orientation);
+    this._positionBeltCursorFromRingAngle(visualChromatic, itemSize.chromaticBelt, orientation);
+    this._updatePlaybackFlashOnBelt();
   }
+
 
   _initInteraction() {
     const { pitchBelt, degreeBelt, intervalBrackets, chromaticNumbersTrack } = this.elements;
@@ -99,7 +114,7 @@ export default class Belts {
             startChrom: this.state.drag.startChrom,
             startHighlight: this.state.drag.startHighlight
           };
-          coRotateRings(startAngles, moveDelta);
+          rotateCoupledRings(startAngles, moveDelta);
         },
         () => snapChromaticAndSettleMode(this.onInteractionEnd)
       );
@@ -130,18 +145,18 @@ export default class Belts {
     const onPointerMove = (e) => {
       if (activePointerId !== e.pointerId) return;
       const { orientation, itemSize } = this.state.belts;
-      const deltaPos = orientation === 'vertical' ? e.clientY - startY : e.clientX - startX;
+      const beltDragDistance = orientation === 'vertical' ? e.clientY - startY : e.clientX - startX;
       
-      let sizeKey;
-      if (element.id.includes('pitch')) sizeKey = 'pitchBelt';
-      else if (element.id.includes('degree') || element.id.includes('interval')) sizeKey = 'degreeBelt';
-      else if (element.id.includes('chromatic')) sizeKey = 'chromaticBelt';
+      let beltSizeKey;
+      if (element.id.includes('pitch')) beltSizeKey = 'pitchBelt';
+      else if (element.id.includes('degree') || element.id.includes('interval')) beltSizeKey = 'degreeBelt';
+      else if (element.id.includes('chromatic')) beltSizeKey = 'chromaticBelt';
       
-      const beltItemSize = itemSize[sizeKey];
-      if (!beltItemSize || beltItemSize === 0) return;
+      const beltCellWidth = itemSize[beltSizeKey];
+      if (!beltCellWidth || beltCellWidth === 0) return;
       
-      const deltaAngle = (deltaPos / beltItemSize) * ANGLE_STEP;
-      onMove(deltaAngle);
+      const beltDistanceToRingAngle = (beltDragDistance / beltCellWidth) * ANGLE_STEP;
+      onMove(beltDistanceToRingAngle);
     };
 
     const onPointerUp = () => {
@@ -164,29 +179,30 @@ export default class Belts {
     this.elements.degreeBelt.innerHTML = '';
     this.elements.intervalBracketsTrackContainer.innerHTML = '';
 
-    const reps = 3;
-    this.state.belts.tracks.pitchBelt = this._createTrack(this.elements.pitchBelt, chromaticLabels, reps);
-    this.state.belts.tracks.degreeBelt = this._createTrack(this.elements.degreeBelt, diatonicLabels, reps);
-    this._populateTrack(this.elements.chromaticColorsTrack, Array(12).fill(''), reps);
-    this._populateTrack(this.elements.chromaticNumbersTrack, [...Array(12).keys()], reps);
+    const RING_TO_BELT_UNWRAP_CYCLES = 3;
+    this.state.belts.tracks.pitchBelt = this._createBeltTrack(this.elements.pitchBelt, chromaticLabels, RING_TO_BELT_UNWRAP_CYCLES);
+    this.state.belts.tracks.degreeBelt = this._createBeltTrack(this.elements.degreeBelt, diatonicLabels, RING_TO_BELT_UNWRAP_CYCLES);
+    this._populateBeltTrack(this.elements.chromaticColorsTrack, Array(12).fill(''), RING_TO_BELT_UNWRAP_CYCLES);
+    this._populateBeltTrack(this.elements.chromaticNumbersTrack, [...Array(12).keys()], RING_TO_BELT_UNWRAP_CYCLES);
     this.state.belts.tracks.chromaticColors = this.elements.chromaticColorsTrack;
     this.state.belts.tracks.chromaticNumbers = this.elements.chromaticNumbersTrack;
 
-    this._createIntervalBracketsTrack(reps);
+    this._createIntervalBeltTrack(RING_TO_BELT_UNWRAP_CYCLES);
   }
   
-  _createTrack(container, items, reps) {
+  _createBeltTrack(container, items, ringUnwrapCycles) {
     const track = document.createElement('div');
     track.className = 'belt-track';
-    this._populateTrack(track, items, reps);
+    this._populateBeltTrack(track, items, ringUnwrapCycles);
     container.appendChild(track);
     return track;
   }
   
-  _populateTrack(track, items, reps) {
+  _populateBeltTrack(track, items, ringUnwrapCycles) {
     track.innerHTML = '';
+    const BELT_SMOOTH_SCROLL_BUFFER = 3;
     const numItems = items.length;
-    for (let i = 0; i < (reps * 12) + 3; i++) {
+    for (let i = 0; i < (ringUnwrapCycles * CHROMATIC_DIVISIONS) + BELT_SMOOTH_SCROLL_BUFFER; i++) {
       const itemIndex = i % numItems;
       const item = items[itemIndex];
       const cell = document.createElement('div');
@@ -197,11 +213,12 @@ export default class Belts {
     }
   }
 
-  _createIntervalBracketsTrack(reps) {
+  _createIntervalBeltTrack(ringUnwrapCycles) {
     const track = document.createElement('div');
     track.className = 'interval-brackets-track';
-    for (let i = 0; i < 12 * reps + 3; i++) {
-        const originalIndex = i % 12;
+    const BELT_SMOOTH_SCROLL_BUFFER = 3;
+    for (let i = 0; i < CHROMATIC_DIVISIONS * ringUnwrapCycles + BELT_SMOOTH_SCROLL_BUFFER; i++) {
+        const originalIndex = i % CHROMATIC_DIVISIONS;
         const majorScaleIndex = DIATONIC_DEGREE_INDICES.indexOf(originalIndex);
         const cell = document.createElement('div');
         cell.className = 'interval-bracket-cell';
@@ -215,17 +232,17 @@ export default class Belts {
     this.elements.intervalBracketsTrackContainer.appendChild(track);
   }
 
-  _calculateAllItemSizes(orientation) {
-    return this._calcBeltItemSize('pitchBelt', this.elements.pitchBelt, orientation) &&
-           this._calcBeltItemSize('degreeBelt', this.elements.degreeBelt, orientation) &&
-           this._calcBeltItemSize('chromaticBelt', this.elements.chromaticBelt, orientation) &&
-           this._calcBeltItemSize('intervalBracketsContainer', this.elements.intervalBracketsWrapper, orientation);
+  _calculateAllBeltCellWidths(orientation) {
+    return this._calculateBeltCellWidth('pitchBelt', this.elements.pitchBelt, orientation) &&
+           this._calculateBeltCellWidth('degreeBelt', this.elements.degreeBelt, orientation) &&
+           this._calculateBeltCellWidth('chromaticBelt', this.elements.chromaticBelt, orientation) &&
+           this._calculateBeltCellWidth('intervalBracketsContainer', this.elements.intervalBracketsWrapper, orientation);
   }
 
-  _calcBeltItemSize(beltId, container, orientation) {
-    const size = orientation === 'vertical' ? container.offsetHeight : container.offsetWidth;
-    if (size > 0) {
-      this.state.belts.itemSize[beltId] = size / 12;
+  _calculateBeltCellWidth(beltId, container, orientation) {
+    const beltContainerSize = orientation === 'vertical' ? container.offsetHeight : container.offsetWidth;
+    if (beltContainerSize > 0) {
+      this.state.belts.itemSize[beltId] = beltContainerSize / CHROMATIC_DIVISIONS;
       return true;
     }
     return false;
@@ -265,86 +282,95 @@ export default class Belts {
     });
   }
   
-  _calculateTranslation(rotation, itemSize, orientation) {
-    const pixelsPerRadian = (12 * itemSize) / TAU;
-    const dynamicOffset = rotation * pixelsPerRadian;
-    let baseOffset, alignmentOffset = 0;
+  _convertRingAngleToBeltDistance(ringAngle, beltCellWidth, orientation) {
+    const ringAngleToBeltPixels = this._calculateRingAngleToBeltPixelsRatio(beltCellWidth);
+    if (ringAngleToBeltPixels === 0) return 0; // Early exit for invalid calculations
+    
+    const ringAngleAsBeltPixels = ringAngle * ringAngleToBeltPixels;
+    let baseBeltOffset, verticalBeltAdjustment = 0;
 
     if (orientation === 'vertical') {
-        baseOffset = -(itemSize * 12);
-        alignmentOffset = 3 * itemSize;
-        return baseOffset - alignmentOffset + dynamicOffset;
+        baseBeltOffset = -(beltCellWidth * CHROMATIC_DIVISIONS);
+        verticalBeltAdjustment = 3 * beltCellWidth;
+        return baseBeltOffset - verticalBeltAdjustment + ringAngleAsBeltPixels;
     } else {
-        baseOffset = -(itemSize * 12);
-        return baseOffset + dynamicOffset;
+        baseBeltOffset = -(beltCellWidth * CHROMATIC_DIVISIONS);
+        return baseBeltOffset + ringAngleAsBeltPixels;
     }
   }
 
-  _updateTrackPosition(track, rotation, itemSize, orientation) {
-    if (!track || !itemSize) return;
-    const translation = this._calculateTranslation(rotation, itemSize, orientation);
-    const transform = orientation === 'vertical' ? `translateY(${translation}px)` : `translateX(${translation}px)`;
-    track.style.transform = transform;
+  _positionBeltFromRingAngle(beltTrack, ringAngle, beltCellWidth, orientation) {
+    if (!beltTrack || !beltCellWidth) return;
+    const beltScrollDistance = this._convertRingAngleToBeltDistance(ringAngle, beltCellWidth, orientation);
+    const transform = orientation === 'vertical' ? `translateY(${beltScrollDistance}px)` : `translateX(${beltScrollDistance}px)`;
+    beltTrack.style.transform = transform;
   }
   
-  _updateIntervalBracketsPosition(degreeRot, itemSize, orientation) {
-    const track = this.elements.intervalBracketsTrackContainer.querySelector('.interval-brackets-track');
-    if (!track || !itemSize) return;
-    let translation = this._calculateTranslation(degreeRot, itemSize, orientation);
+  _positionIntervalBeltFromDegreeRing(degreeRingAngle, beltCellWidth, orientation) {
+    const intervalBeltTrack = this.elements.intervalBracketsTrackContainer.querySelector('.interval-brackets-track');
+    if (!intervalBeltTrack || !beltCellWidth) return;
+    let beltScrollDistance = this._convertRingAngleToBeltDistance(degreeRingAngle, beltCellWidth, orientation);
     if (orientation === 'horizontal') {
-        translation += 0.5 * itemSize;
+        beltScrollDistance += 0.5 * beltCellWidth;
     }
-    const transform = orientation === 'vertical' ? `translateY(${translation}px)` : `translateX(${translation}px)`;
-    track.style.transform = transform;
+    const transform = orientation === 'vertical' ? `translateY(${beltScrollDistance}px)` : `translateX(${beltScrollDistance}px)`;
+    intervalBeltTrack.style.transform = transform;
   }
   
-  _updateCursorPosition(chromaticRotation, itemSize, orientation) {
-    const cursor = this.elements.cursor;
-    if (!cursor || !itemSize) return;
+  _positionBeltCursorFromRingAngle(chromaticRingAngle, beltCellWidth, orientation) {
+    const beltCursor = this.elements.cursor;
+    if (!beltCursor || !beltCellWidth) return;
 
-    const pixelsPerRadian = (12 * itemSize) / TAU;
-    const dynamicOffset = chromaticRotation * pixelsPerRadian;
-    let translation;
+    const ringAngleToBeltPixels = this._calculateRingAngleToBeltPixelsRatio(beltCellWidth);
+    if (ringAngleToBeltPixels === 0) return; // Early exit for invalid calculations
+    
+    const ringAngleAsBeltPixels = chromaticRingAngle * ringAngleToBeltPixels;
+    let cursorBeltPosition;
 
     if (orientation === 'vertical') {
-        const windowHeight = -12 * itemSize;
-        translation = ((dynamicOffset % windowHeight) + windowHeight) % windowHeight;
+        const beltWindowHeight = -CHROMATIC_DIVISIONS * beltCellWidth;
+        cursorBeltPosition = ((ringAngleAsBeltPixels % beltWindowHeight) + beltWindowHeight) % beltWindowHeight;
     } else {
-        translation = dynamicOffset;
+        cursorBeltPosition = ringAngleAsBeltPixels;
     }
     
-    const transform = orientation === 'vertical' ? `translateY(${translation}px)` : `translateX(${translation}px)`;
-    cursor.style.transform = transform;
+    const transform = orientation === 'vertical' ? `translateY(${cursorBeltPosition}px)` : `translateX(${cursorBeltPosition}px)`;
+    beltCursor.style.transform = transform;
   }
   
-  _updatePlaybackFlash() {
+  _updatePlaybackFlashOnBelt() {
       const { rings, playback, belts } = this.state;
-      const flash = this.elements.flashOverlay;
-      const itemSize = belts.itemSize.chromaticBelt;
+      const beltFlashOverlay = this.elements.flashOverlay;
+      const beltCellWidth = belts.itemSize.chromaticBelt;
       const orientation = belts.orientation;
 
-      if (!flash || !itemSize || !playback.isPlaying || playback.currentNoteIndex === null) {
-          flash.style.display = 'none';
+      if (!beltFlashOverlay || !beltCellWidth || !playback.isPlaying || playback.currentNoteIndex === null) {
+          beltFlashOverlay.style.display = 'none';
           return;
       }
       
-      const pixelsPerRadian = (12 * itemSize) / TAU;
-      let translation;
-
-      if (orientation === 'vertical') {
-          const visualCursorRotation = -rings.chromatic;
-          const noteOffsetRotation = (playback.currentNoteIndex - playback.rootNoteIndexForPlayback) * ANGLE_STEP;
-          const totalVisualRotation = visualCursorRotation - noteOffsetRotation;
-          const dynamicOffset = totalVisualRotation * pixelsPerRadian;
-          const windowHeight = -12 * itemSize;
-          translation = ((dynamicOffset % windowHeight) + windowHeight) % windowHeight;
-      } else {
-          const totalRotation = rings.chromatic + (playback.currentNoteIndex - playback.rootNoteIndexForPlayback) * ANGLE_STEP;
-          translation = totalRotation * pixelsPerRadian;
+      const ringAngleToBeltPixels = this._calculateRingAngleToBeltPixelsRatio(beltCellWidth);
+      if (ringAngleToBeltPixels === 0) {
+          beltFlashOverlay.style.display = 'none';
+          return; // Early exit for invalid calculations
       }
       
-      const transform = orientation === 'vertical' ? `translateY(${translation}px)` : `translateX(${translation}px)`;
-      flash.style.transform = transform;
-      flash.style.display = 'block';
+      let flashBeltPosition;
+
+      if (orientation === 'vertical') {
+          const visualChromaticRingAngle = -rings.chromatic;
+          const noteOffsetRingAngle = (playback.currentNoteIndex - playback.rootNoteIndexForPlayback) * ANGLE_STEP;
+          const totalVisualRingAngle = visualChromaticRingAngle - noteOffsetRingAngle;
+          const ringAngleAsBeltPixels = totalVisualRingAngle * ringAngleToBeltPixels;
+          const beltWindowHeight = -CHROMATIC_DIVISIONS * beltCellWidth;
+          flashBeltPosition = ((ringAngleAsBeltPixels % beltWindowHeight) + beltWindowHeight) % beltWindowHeight;
+      } else {
+          const totalRingAngle = rings.chromatic + (playback.currentNoteIndex - playback.rootNoteIndexForPlayback) * ANGLE_STEP;
+          flashBeltPosition = totalRingAngle * ringAngleToBeltPixels;
+      }
+      
+      const transform = orientation === 'vertical' ? `translateY(${flashBeltPosition}px)` : `translateX(${flashBeltPosition}px)`;
+      beltFlashOverlay.style.transform = transform;
+      beltFlashOverlay.style.display = 'block';
   }
 }

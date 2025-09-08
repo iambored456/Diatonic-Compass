@@ -22,7 +22,7 @@ export function setRingAngle(ringKey, angle) {
  * @param {number} functionalDelta - The delta for the wheel and other belts (can be inverted).
  * @param {number} visualDelta - The delta for the chromatic belt's visual movement (always direct).
  */
-export function coRotateRings(startAngles, functionalDelta, visualDelta) {
+export function rotateCoupledRings(startAngles, functionalDelta, visualDelta) {
   // Use the visualDelta for the chromatic ring to match the user's gesture.
   // If visualDelta is not provided, default to functionalDelta for horizontal mode.
   const chromDelta = visualDelta ?? functionalDelta;

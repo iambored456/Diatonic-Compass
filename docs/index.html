@@ -24,6 +24,25 @@
 
 <!-- Main stylesheets -->
 
+<!-- Prevent flash of light content in dark mode -->
+<script>
+  (function() {
+    try {
+      const savedTheme = localStorage.getItem('diatonic-compass-theme');
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldUseDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+      
+      if (shouldUseDark) {
+        // Add to documentElement so it's available before body exists
+        document.documentElement.classList.add('dark-mode-pending');
+      }
+    } catch (e) {
+      // Gracefully handle localStorage errors
+      console.warn('Could not load theme preference:', e);
+    }
+  })();
+</script>
+
 <!-- Accessibility enhancements -->
 <style>
   /* Critical accessibility styles loaded inline to prevent FOUC */
@@ -52,13 +71,18 @@
     }
   }
 </style>
-  <script type="module" crossorigin src="./assets/index-CtzSe68x.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-B_iZ7LOD.css">
+  <script type="module" crossorigin src="./assets/index-I8egu1CP.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-By3ijTYu.css">
 </head>
 <body>
 
-<!-- Skip navigation link -->
-<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Apply dark mode immediately to prevent FOUC -->
+<script>
+  if (document.documentElement.classList.contains('dark-mode-pending')) {
+    document.body.classList.add('dark-mode');
+    document.documentElement.classList.remove('dark-mode-pending');
+  }
+</script>
 
 <!-- Settings button with enhanced accessibility -->
 <button id="settings-btn" 
@@ -76,75 +100,89 @@
      aria-hidden="true"
      aria-labelledby="sidebar-title">
   <div class="sidebar-content">
-    <h2 id="sidebar-title">Settings</h2>
-    <p class="sr-only">Quinn Fleming's Diatonic Compass - Configuration options</p>
+    <h2 id="sidebar-title">Diatonic Compass</h2>
     
-    <!-- Orientation setting -->
-    <div class="sidebar-setting">
-      <span id="orientation-label">Layout Orientation</span>
-      <button id="toggle-orientation-btn" 
-              class="sidebar-btn"
-              aria-describedby="orientation-help">Vertical</button>
-      <div id="orientation-help" class="sr-only">
-        Switch between horizontal and vertical layout of the interface
+    <!-- Tutorial button at top -->
+    <button id="start-tutorial-btn" 
+            class="sidebar-btn tutorial-btn"
+            aria-describedby="tutorial-help">Start Tutorial</button>
+    <div id="tutorial-help" class="sr-only">
+      Begin an interactive tutorial explaining how to use the Diatonic Compass
+    </div>
+    
+    <!-- Layout Orientation setting -->
+    <div class="sidebar-section">
+      <h3 class="sidebar-subheader">Orientation</h3>
+      <div class="toggle-switch-container">
+        <div class="toggle-switch" id="orientation-toggle">
+          <input type="radio" name="orientation" id="orientation-horizontal" value="horizontal" checked>
+          <label for="orientation-horizontal">Horizontal</label>
+          <input type="radio" name="orientation" id="orientation-vertical" value="vertical">
+          <label for="orientation-vertical">Vertical</label>
+          <div class="toggle-slider"></div>
+        </div>
       </div>
     </div>
     
     <!-- Accidentals setting -->
-    <fieldset class="sidebar-setting">
-      <legend>Note Name Display</legend>
-      <div class="sidebar-button-group" role="group" aria-labelledby="accidentals-legend">
-        <span id="accidentals-legend" class="sr-only">Choose which note names to display</span>
+    <div class="sidebar-section">
+      <h3 class="sidebar-subheader">Accidentals</h3>
+      <div class="accidentals-controls">
         <button id="flat-btn" 
                 class="accidental-toggle" 
                 aria-pressed="true" 
-                aria-label="Show flat note names"
-                aria-describedby="flat-help">♭</button>
-        <div id="flat-help" class="sr-only">
-          Toggle display of flat note names like D-flat, E-flat
-        </div>
+                aria-label="Show flat note names">♭</button>
         <button id="sharp-btn" 
                 class="accidental-toggle" 
                 aria-pressed="true" 
-                aria-label="Show sharp note names"
-                aria-describedby="sharp-help">♯</button>
-        <div id="sharp-help" class="sr-only">
-          Toggle display of sharp note names like C-sharp, F-sharp
-        </div>
+                aria-label="Show sharp note names">♯</button>
       </div>
-    </fieldset>
+    </div>
     
     <!-- Theme setting -->
-    <div class="sidebar-setting">
-      <span id="theme-label">Color Theme</span>
-      <button id="toggle-dark-mode-btn" 
-              class="sidebar-btn"
-              aria-describedby="theme-help">Dark Mode</button>
-      <div id="theme-help" class="sr-only">
-        Switch between light and dark color themes
-      </div>
-    </div>
-    
-    <!-- Tutorial setting -->
-    <div class="sidebar-setting">
-      <span id="tutorial-label">Learning</span>
-      <button id="start-tutorial-btn" 
-              class="sidebar-btn"
-              aria-describedby="tutorial-help">Start Tutorial</button>
-      <div id="tutorial-help" class="sr-only">
-        Begin an interactive tutorial explaining how to use the Diatonic Compass
-      </div>
-    </div>
-    
-    <!-- Accessibility shortcuts info -->
-    <div class="sidebar-setting">
-      <span id="accessibility-label">Accessibility</span>
-      <div class="sidebar-info" aria-describedby="accessibility-info">
-        <div id="accessibility-info" class="sr-only">
-          Keyboard navigation: Use arrow keys to rotate rings, space to play scale, H for help
+    <div class="sidebar-section">
+      <h3 class="sidebar-subheader">Colour Theme</h3>
+      <div class="toggle-switch-container">
+        <div class="toggle-switch" id="theme-toggle">
+          <input type="radio" name="theme" id="theme-light" value="light" checked>
+          <label for="theme-light">Light</label>
+          <input type="radio" name="theme" id="theme-dark" value="dark">
+          <label for="theme-dark">Dark</label>
+          <div class="toggle-slider"></div>
         </div>
-        <small>Press H for keyboard shortcuts</small>
       </div>
+    </div>
+    
+    <!-- Component Order setting -->
+    <div class="sidebar-section">
+      <h3 class="sidebar-subheader">Component Order</h3>
+      <div id="order-container" aria-describedby="order-help">
+        <div id="order-help" class="sr-only">
+          Drag the components to reorder how they appear in the interface
+        </div>
+        <div id="belt-order-list" role="listbox" aria-label="Component ordering controls">
+          <!-- Components will be populated by OrderManager -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Keyboard Shortcuts info -->
+    <div class="sidebar-section">
+      <h3 class="sidebar-subheader">Keyboard Shortcuts</h3>
+      <div class="accessibility-text">
+        <p> <span class="key">Tab</span> Navigate between controls</p>
+        <p> <span class="key">Arrow keys</span> Rotate ring / belt</p>
+        <p> <span class="key">Space</span>/<span class="key">Enter</span>: Play scale</p>
+        <p> <span class="key">F</span> Toggle flat note names</p>
+        <p> <span class="key">S</span> Toggle sharp note names</p>
+        <p> <span class="key">V</span> Toggle vertical/horizontal layout</p>
+        <p> <span class="key">F1</span> Open/close settings</p>
+      </div>
+    </div>
+    
+    <!-- Credit -->
+    <div class="sidebar-credit">
+      <small>Created by Quinn Fleming</small>
     </div>
   </div>
 </nav>

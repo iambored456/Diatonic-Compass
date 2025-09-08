@@ -149,6 +149,20 @@ function validatePreferences(prefs) {
           case 'tutorialCompleted':
             validated[key] = Boolean(value);
             break;
+          case 'beltOrder':
+            // Validate belt order array
+            if (Array.isArray(value)) {
+              const requiredBelts = ['pitch', 'degree', 'intervals', 'chromatic'];
+              const hasAllBelts = requiredBelts.every(belt => value.includes(belt));
+              if (hasAllBelts && value.length === requiredBelts.length) {
+                validated[key] = [...value]; // Clone array
+              } else {
+                validated[key] = defaultValue;
+              }
+            } else {
+              validated[key] = defaultValue;
+            }
+            break;
           default:
             validated[key] = value;
         }
@@ -175,7 +189,8 @@ function getDefaultPreferences() {
     orientation: 'horizontal',
     volume: 0.5,
     tutorialCompleted: false,
-    showAdvancedControls: false
+    showAdvancedControls: false,
+    beltOrder: ['pitch', 'degree', 'intervals', 'chromatic']
   };
 }
 

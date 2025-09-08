@@ -27,17 +27,83 @@ export function checkCanvasSize(canvas, dimensions) {
       return false;
     }
 
-    // Get container dimensions - exactly like original
+    // Detect layout mode
+    const mainContainer = canvas.closest('.main-container');
+    const isVerticalMode = mainContainer && mainContainer.classList.contains('vertical-layout');
+    
+    // Get container dimensions and debug DOM structure
     const containerWidth = canvas.parentElement.offsetWidth;
     const containerHeight = canvas.parentElement.offsetHeight;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const mainContainerWidth = mainContainer ? mainContainer.offsetWidth : 0;
+    const mainContainerHeight = mainContainer ? mainContainer.offsetHeight : 0;
     
-    // Use the smaller dimension to ensure canvas is always square - exactly like original
-    const newSize = Math.min(containerWidth, containerHeight);
+    // Debug DOM hierarchy
+    let element = canvas;
+    const hierarchy = [];
+    while (element && element !== document.body) {
+      hierarchy.push({
+        tagName: element.tagName,
+        className: element.className,
+        id: element.id,
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        style: {
+          width: element.style.width,
+          height: element.style.height,
+          display: getComputedStyle(element).display,
+          position: getComputedStyle(element).position
+        }
+      });
+      element = element.parentElement;
+    }
+    
+    let newSize;
+    if (isVerticalMode) {
+      // In vertical mode, we want the canvas to be as large as possible while staying square
+      // Since we're in a grid with auto auto columns, let's use more available space
+      const maxPossibleWidth = Math.max(containerWidth, viewportWidth * 0.4); // At least 40% of viewport
+      const maxPossibleHeight = Math.max(containerHeight, viewportHeight * 0.8); // At least 80% of viewport
+      newSize = Math.min(maxPossibleWidth, maxPossibleHeight);
+    } else {
+      // In horizontal mode: canvas needs to respect flex layout constraints
+      // Use available space but cap it to prevent overflow
+      const availableSpace = Math.min(containerWidth, containerHeight);
+      newSize = Math.min(availableSpace, window.innerHeight * 0.8); // Cap at 80% of viewport height
+    }
 
-    // Return false if size is 0 or unchanged - exactly like original
+    if (Math.abs(newSize - (dimensions.size || 0)) > 50) { // Only log on significant changes
+      console.log('=== CANVAS CONTAINER DEBUG ===');
+      console.log('Vertical mode:', isVerticalMode);
+      console.log('Canvas size:', { width: canvas.width, height: canvas.height });
+      console.log('Container dimensions:', { containerWidth, containerHeight });
+      console.log('Viewport dimensions:', { viewportWidth, viewportHeight });
+      console.log('Calculated size:', newSize);
+      console.log('DOM Hierarchy (from canvas to body):');
+      hierarchy.forEach((elem, index) => {
+        console.log(`  ${index}: ${elem.tagName}${elem.id ? '#' + elem.id : ''}${elem.className ? '.' + elem.className.replace(/\s+/g, '.') : ''}`, {
+          dimensions: `${elem.width}x${elem.height}`,
+          styles: elem.style
+        });
+      });
+    }
+
+    // Return false if size is 0 or unchanged - exactly like original  
     if (newSize === dimensions.size || newSize === 0) {
       return false;
     }
+    
+    // Skip very small size changes to prevent flickering
+    if (dimensions.size && Math.abs(newSize - dimensions.size) < 2) {
+      return false;
+    }
+    
+    console.log('Canvas resize proceeding:', {
+      oldSize: dimensions.size,
+      newSize: newSize,
+      difference: Math.abs(newSize - (dimensions.size || 0))
+    });
 
     // Update dimensions - exactly like original
     dimensions.size = newSize;
@@ -50,11 +116,29 @@ export function checkCanvasSize(canvas, dimensions) {
     }
 
     // Adjust canvas buffer size for device pixel ratio - exactly like original
-    canvas.width = newSize * dimensions.dpr;
-    canvas.height = newSize * dimensions.dpr;
+    const newBufferWidth = newSize * dimensions.dpr;
+    const newBufferHeight = newSize * dimensions.dpr;
+    
+    console.log('Setting canvas dimensions:', {
+      cssSize: `${newSize}px`,
+      bufferSize: `${newBufferWidth}x${newBufferHeight}`,
+      dpr: dimensions.dpr,
+      beforeCSS: { width: canvas.style.width, height: canvas.style.height },
+      beforeBuffer: { width: canvas.width, height: canvas.height }
+    });
+    
+    canvas.width = newBufferWidth;
+    canvas.height = newBufferHeight;
 
-    // DON'T set CSS size - let CSS handle the display size naturally
-    // This was the issue - the original doesn't set CSS width/height
+    // Set CSS size to match the calculated size - this ensures proper scaling
+    canvas.style.width = `${newSize}px`;
+    canvas.style.height = `${newSize}px`;
+    
+    console.log('Canvas dimensions after setting:', {
+      cssSize: { width: canvas.style.width, height: canvas.style.height },
+      bufferSize: { width: canvas.width, height: canvas.height },
+      offsetSize: { width: canvas.offsetWidth, height: canvas.offsetHeight }
+    });
 
     return true;
 

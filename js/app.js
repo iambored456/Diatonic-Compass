@@ -38,8 +38,6 @@ export default class App {
   }
 
   _initializeApp() {
-    // Add skip link for accessibility
-    this._addSkipLink();
     
     // Find required elements
     this.elements = {
@@ -65,8 +63,16 @@ export default class App {
         ActionController.toggleAccidental('sharp');
         this._announceChange(`Sharp names ${this.state.display.sharp ? 'enabled' : 'disabled'}`);
       }, 'UI'),
-      onToggleDarkMode: ErrorHandler.wrap(() => {
-        ActionController.toggleDarkMode();
+      onToggleDarkMode: ErrorHandler.wrap((forceDark) => {
+        if (typeof forceDark === 'boolean') {
+          // Handle explicit dark mode setting from toggle switches
+          if (this.state.ui.darkMode !== forceDark) {
+            ActionController.toggleDarkMode();
+          }
+        } else {
+          // Handle regular toggle
+          ActionController.toggleDarkMode();
+        }
         this._announceChange(`${this.state.ui.darkMode ? 'Dark' : 'Light'} mode enabled`);
       }, 'UI'),
       onTogglePlayback: ErrorHandler.wrap(() => {
@@ -77,15 +83,32 @@ export default class App {
         ActionController.toggleSidebar(state);
         this._announceChange(`Settings ${this.state.ui.sidebarOpen ? 'opened' : 'closed'}`);
       }, 'UI'),
-      onToggleOrientation: ErrorHandler.wrap(() => {
-        const newOrientation = this.state.belts.orientation === 'horizontal' ? 'vertical' : 'horizontal';
-        ActionController.setOrientation(newOrientation);
-        this._announceChange(`Layout changed to ${newOrientation}`);
+      onToggleOrientation: ErrorHandler.wrap((forceOrientation) => {
+        let newOrientation;
+        if (typeof forceOrientation === 'string') {
+          // Handle explicit orientation setting from toggle switches
+          newOrientation = forceOrientation;
+        } else {
+          // Handle regular toggle
+          newOrientation = this.state.belts.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+        }
+        
+        if (this.state.belts.orientation !== newOrientation) {
+          ActionController.setOrientation(newOrientation);
+          this._announceChange(`Layout changed to ${newOrientation}`);
+        }
       }, 'UI'),
       onStartTutorial: ErrorHandler.wrap(() => {
         this._announceChange('Tutorial started');
         startTutorial();
       }, 'Tutorial'),
+      onShowKeyboardHelp: ErrorHandler.wrap(() => {
+        this._showKeyboardHelp();
+      }, 'UI'),
+      onOrderChange: ErrorHandler.wrap((layoutOrder, beltOrder) => {
+        console.log('Order change triggered:', { layoutOrder, beltOrder });
+        this._applyComponentOrder(layoutOrder, beltOrder);
+      }, 'UI'),
     };
 
     // Initialize components with error handling
@@ -139,44 +162,6 @@ export default class App {
     this.isInitialized = true;
   }
 
-  /**
-   * Add skip link for keyboard navigation
-   */
-  _addSkipLink() {
-    const skipLink = document.createElement('a');
-    skipLink.href = '#chromaWheel';
-    skipLink.className = 'skip-link';
-    skipLink.textContent = 'Skip to main content';
-    skipLink.style.cssText = `
-      position: absolute;
-      top: -40px;
-      left: 6px;
-      background: var(--color-surface, white);
-      color: var(--color-text-primary, black);
-      padding: 8px;
-      z-index: 10000;
-      text-decoration: none;
-      border-radius: 4px;
-      border: 2px solid #33c6dc;
-      transition: top 0.3s;
-    `;
-    
-    skipLink.addEventListener('focus', () => {
-      skipLink.style.top = '6px';
-    });
-    
-    skipLink.addEventListener('blur', () => {
-      skipLink.style.top = '-40px';
-    });
-    
-    document.body.insertBefore(skipLink, document.body.firstChild);
-    
-    this.cleanupFunctions.push(() => {
-      if (skipLink.parentNode) {
-        skipLink.parentNode.removeChild(skipLink);
-      }
-    });
-  }
 
   /**
    * Initialize accessibility features gradually
@@ -239,50 +224,82 @@ export default class App {
    */
   _setupBasicKeyboard() {
     const handleKeyDown = (e) => {
+      // Don't interfere with text input or system shortcuts
       if (this._isTextInputActive()) return;
       
-      const step = e.ctrlKey ? 3 : 1; // Larger steps with Ctrl
+      // Don't interfere with browser navigation shortcuts
+      if (e.ctrlKey || e.altKey || e.metaKey) {
+        return;
+      }
       
       switch (e.key) {
         case 'ArrowLeft':
-          e.preventDefault();
-          this._rotateRing('pitchClass', -step);
-          this._announceChange('Pitch ring rotated left');
+          // Only handle if focused on interactive music elements
+          if (e.target.id === 'chromaWheel' || e.target.closest('.belt')) {
+            e.preventDefault();
+            this._rotateRing('pitchClass', -1);
+            this._announceChange('Pitch ring rotated left');
+          }
           break;
         case 'ArrowRight':
-          e.preventDefault();
-          this._rotateRing('pitchClass', step);
-          this._announceChange('Pitch ring rotated right');
+          // Only handle if focused on interactive music elements
+          if (e.target.id === 'chromaWheel' || e.target.closest('.belt')) {
+            e.preventDefault();
+            this._rotateRing('pitchClass', 1);
+            this._announceChange('Pitch ring rotated right');
+          }
           break;
         case 'ArrowUp':
-          e.preventDefault();
-          this._rotateRing('degree', step);
-          this._rotateRing('highlightPosition', step);
-          this._announceChange('Degree ring rotated up');
+          // Handle up/down for belt navigation in vertical layout or general wheel navigation
+          if (e.target.id === 'chromaWheel' || e.target.closest('.belt')) {
+            e.preventDefault();
+            this._rotateRing('pitchClass', 1);
+            this._announceChange('Pitch ring rotated up');
+          }
           break;
         case 'ArrowDown':
-          e.preventDefault();
-          this._rotateRing('degree', -step);
-          this._rotateRing('highlightPosition', -step);
-          this._announceChange('Degree ring rotated down');
+          // Handle up/down for belt navigation in vertical layout or general wheel navigation  
+          if (e.target.id === 'chromaWheel' || e.target.closest('.belt')) {
+            e.preventDefault();
+            this._rotateRing('pitchClass', -1);
+            this._announceChange('Pitch ring rotated down');
+          }
           break;
         case ' ':
         case 'Enter':
-          if (e.target.id === 'chromaWheel' || e.target.id === 'result-container') {
+          // Play scale globally (unless interacting with buttons/inputs)
+          if (!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('select')) {
             e.preventDefault();
             ActionController.togglePlayback();
           }
           break;
         case 'Escape':
-          ActionController.toggleSidebar(false);
+          // Escape should work globally but not prevent other uses
+          ActionController.toggleSidebar();
+          this._announceChange(this.state.ui.sidebarOpen ? 'Settings opened' : 'Settings closed');
           break;
-        case 'h':
-        case 'H':
-          if (!e.ctrlKey && !e.altKey) {
-            e.preventDefault();
-            this._showKeyboardHelp();
-          }
+        case 'f':
+        case 'F':
+          // Only handle if not in a text field and not a system shortcut
+          e.preventDefault();
+          ActionController.toggleAccidental('flat');
+          this._announceChange(`Flat names ${this.state.display.flat ? 'enabled' : 'disabled'}`);
           break;
+        case 's':
+        case 'S':
+          // Only handle if not a system shortcut (Ctrl+S is save)
+          e.preventDefault();
+          ActionController.toggleAccidental('sharp');
+          this._announceChange(`Sharp names ${this.state.display.sharp ? 'enabled' : 'disabled'}`);
+          break;
+        case 'v':
+        case 'V':
+          e.preventDefault();
+          const newOrientation = this.state.belts.orientation === 'horizontal' ? 'vertical' : 'horizontal';
+          ActionController.setOrientation(newOrientation);
+          this._announceChange(`Layout changed to ${newOrientation}`);
+          break;
+        // Don't handle Tab, Shift+Tab, or other navigation keys - let browser handle them
       }
     };
 
@@ -310,6 +327,262 @@ export default class App {
     const textInputs = ['INPUT', 'TEXTAREA', 'SELECT'];
     return textInputs.includes(activeElement?.tagName) || 
            activeElement?.contentEditable === 'true';
+  }
+
+  /**
+   * Apply component order changes to the actual layout
+   */
+  _applyComponentOrder(layoutOrder, beltOrder) {
+    console.log('Applying component order:', { layoutOrder, beltOrder });
+    
+    const currentOrientation = this.state.belts.orientation;
+    const order = layoutOrder[currentOrientation];
+    console.log(`Current orientation: ${currentOrientation}, order:`, order);
+    
+    // Always restore structure first before applying new layout
+    let container = this.container.querySelector('.main-container');
+    if (!container) {
+      container = document.querySelector('.main-container');
+    }
+    if (container) {
+      this._restoreOriginalStructure(container);
+    }
+    
+    if (currentOrientation === 'horizontal') {
+      console.log('Calling _applyHorizontalOrder');
+      this._applyHorizontalOrder(order);
+    } else {
+      console.log('Calling _applyVerticalOrder');
+      this._applyVerticalOrder(order);
+    }
+    
+    // Apply belt order within belts container (after structure is established)
+    if (beltOrder) {
+      console.log('Applying belt order:', beltOrder);
+      this._applyBeltOrder(beltOrder);
+    }
+  }
+
+  /**
+   * Apply horizontal layout order
+   */
+  _applyHorizontalOrder(order) {
+    console.log('_applyHorizontalOrder called with order:', order);
+    
+    // Try multiple ways to find the main container
+    let container = this.container.querySelector('.main-container');
+    if (!container) {
+      container = document.querySelector('.main-container');
+    }
+    if (!container) {
+      console.log('ERROR: main-container not found anywhere');
+      console.log('this.container is:', this.container);
+      return;
+    }
+
+    console.log('Container element:', container);
+    console.log('Container classes:', container.className);
+    console.log('Container computed styles before:', {
+      display: getComputedStyle(container).display,
+      flexDirection: getComputedStyle(container).flexDirection,
+      width: getComputedStyle(container).width,
+      height: getComputedStyle(container).height
+    });
+
+    // Get all components including individual belts
+    const beltsContainer = container.querySelector('.belts-container');
+    const components = {
+      compass: container.querySelector('.wheel-container'),
+      result: container.querySelector('#result-container'),
+      pitch: beltsContainer?.querySelector('.pitch-belt'),
+      degree: beltsContainer?.querySelector('.degree-belt'),
+      intervals: beltsContainer?.querySelector('.interval-brackets-wrapper'),
+      chromatic: beltsContainer?.querySelector('.chromatic-belt')
+    };
+
+    console.log('Found components:', Object.keys(components).reduce((acc, key) => {
+      acc[key] = !!components[key];
+      return acc;
+    }, {}));
+
+    console.log('Components dimensions before flattening:', {
+      compass: components.compass ? {
+        width: components.compass.offsetWidth,
+        height: components.compass.offsetHeight,
+        display: getComputedStyle(components.compass).display
+      } : null,
+      beltsContainer: beltsContainer ? {
+        width: beltsContainer.offsetWidth,
+        height: beltsContainer.offsetHeight,
+        display: getComputedStyle(beltsContainer).display
+      } : null
+    });
+
+    // Temporarily move belts out of belts-container to be direct children
+    const belts = ['pitch', 'degree', 'intervals', 'chromatic'];
+    const beltElements = [];
+    
+    belts.forEach(beltId => {
+      const element = components[beltId];
+      if (element) {
+        // Store original parent and position for later restoration
+        element._originalParent = element.parentNode;
+        element._originalNextSibling = element.nextSibling;
+        
+        // Move to main container temporarily
+        container.appendChild(element);
+        beltElements.push(element);
+      }
+    });
+
+    // Hide the now-empty belts container
+    if (beltsContainer) {
+      beltsContainer.style.display = 'none';
+    }
+
+    console.log('After flattening, container children:', Array.from(container.children).map(child => ({
+      tagName: child.tagName,
+      className: child.className,
+      id: child.id,
+      display: getComputedStyle(child).display,
+      flex: getComputedStyle(child).flex,
+      width: child.offsetWidth,
+      height: child.offsetHeight
+    })));
+
+    // Apply order to all individual components
+    order.forEach((componentId, index) => {
+      const element = components[componentId];
+      if (element) {
+        element.style.setProperty('order', index + 1, 'important');
+        console.log(`Set order ${index + 1} for component:`, componentId);
+        console.log(`Element after order applied:`, {
+          width: element.offsetWidth,
+          height: element.offsetHeight,
+          display: getComputedStyle(element).display,
+          flex: getComputedStyle(element).flex,
+          order: getComputedStyle(element).order
+        });
+      }
+    });
+
+    console.log('Container computed styles after:', {
+      display: getComputedStyle(container).display,
+      flexDirection: getComputedStyle(container).flexDirection,
+      width: getComputedStyle(container).width,
+      height: getComputedStyle(container).height
+    });
+
+    // Store the flattened state so we can restore later
+    container._isFlattened = true;
+    container._beltElements = beltElements;
+    container._beltsContainer = beltsContainer;
+  }
+
+  /**
+   * Apply vertical layout order 
+   */
+  _applyVerticalOrder(order) {
+    // In vertical mode, restore DOM structure and only reorder compass vs belts group
+    let container = this.container.querySelector('.main-container');
+    if (!container) {
+      container = document.querySelector('.main-container');
+    }
+    if (!container) return;
+
+    // First, restore the DOM structure if it was flattened
+    this._restoreOriginalStructure(container);
+
+    const compassIndex = order.indexOf('compass');
+    const resultIndex = order.indexOf('result');
+    
+    console.log('Vertical layout indices:', {
+      order,
+      compassIndex,
+      resultIndex,
+      compassFirst: compassIndex < resultIndex
+    });
+    
+    // The mapping should be intuitive:
+    // - Sidebar TOP (compass first) → Main app LEFT 
+    // - Sidebar BOTTOM (compass last) → Main app RIGHT
+    // BUT user expects the opposite behavior based on feedback
+    
+    if (compassIndex > resultIndex) {
+      // Compass comes AFTER result in sidebar (bottom) → put compass on LEFT in main app
+      container.style.gridTemplateAreas = `
+        "wheel belts"
+        "wheel result"
+      `;
+      console.log('Applied vertical order: compass left, belts right (compass after result)');
+    } else {
+      // Compass comes BEFORE result in sidebar (top) → put belts on LEFT in main app  
+      container.style.gridTemplateAreas = `
+        "belts wheel"
+        "result wheel"
+      `;
+      console.log('Applied vertical order: belts left, compass right (compass before result)');
+    }
+  }
+
+  /**
+   * Restore original DOM structure (belts back to belts-container)
+   */
+  _restoreOriginalStructure(container) {
+    if (!container._isFlattened) return;
+
+    console.log('Restoring original DOM structure');
+    
+    // Restore belts to their original container
+    if (container._beltElements && container._beltsContainer) {
+      container._beltElements.forEach(element => {
+        // Clear the temporary order style
+        element.style.removeProperty('order');
+        
+        // Restore to original position
+        if (element._originalNextSibling) {
+          element._originalParent.insertBefore(element, element._originalNextSibling);
+        } else {
+          element._originalParent.appendChild(element);
+        }
+        
+        // Clean up temp properties
+        delete element._originalParent;
+        delete element._originalNextSibling;
+      });
+
+      // Show the belts container again
+      container._beltsContainer.style.display = '';
+    }
+
+    // Clean up container temp properties
+    delete container._isFlattened;
+    delete container._beltElements;
+    delete container._beltsContainer;
+  }
+
+  /**
+   * Apply belt order within the belts container
+   */
+  _applyBeltOrder(beltOrder) {
+    const beltsContainer = this.elements.beltsContainer;
+    if (!beltsContainer) return;
+
+    const belts = {
+      pitch: beltsContainer.querySelector('.pitch-belt'),
+      degree: beltsContainer.querySelector('.degree-belt'),
+      intervals: beltsContainer.querySelector('.interval-brackets-wrapper'),
+      chromatic: beltsContainer.querySelector('.chromatic-belt')
+    };
+
+    // Apply CSS order property to belts
+    beltOrder.forEach((beltId, index) => {
+      const element = belts[beltId];
+      if (element) {
+        element.style.setProperty('order', index + 1, 'important');
+        console.log(`Set belt order ${index + 1} for belt:`, beltId);
+      }
+    });
   }
 
   /**
@@ -384,11 +657,17 @@ export default class App {
   _showKeyboardHelp() {
     const helpText = `
 Keyboard Shortcuts:
-- Arrow keys: Rotate rings
-- Ctrl + arrows: Large steps
-- Space/Enter: Play scale
+- Tab: Navigate between controls
+- Arrow keys: Rotate pitch ring (when focused on wheel/belts)
+- Ctrl + arrows: Large steps (when focused on wheel/belts)
+- Space/Enter: Play scale (when focused on wheel/result)
+- F: Toggle flat note names
+- S: Toggle sharp note names  
+- V: Toggle vertical/horizontal layout
 - H: Show this help
-- Escape: Close dialogs
+- Escape: Open/close settings
+
+Focus the wheel or belts first, then use arrow keys to rotate rings.
     `.trim();
     
     alert(helpText); // Basic fallback - could be enhanced with modal

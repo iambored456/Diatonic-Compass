@@ -13,8 +13,154 @@ import { appState } from '../state/appState.js';
 export class KeyboardManager {
   static isEnabled = true;
   static keyMap = new Map();
-  static focusedElement = null;
+  static activeRing = 'pitch'; // Track which ring is active for keyboard control
   static navigationMode = 'normal'; // 'normal', 'fine', 'help'
+
+  /**
+   * Set the currently active ring for keyboard control
+   */
+  static setActiveRing(ringType) {
+    this.activeRing = ringType;
+    this.updateRingHighlights();
+  }
+
+  /**
+   * Update visual highlights to show which ring is active
+   */
+  static updateRingHighlights() {
+    const canvas = document.getElementById('chromaWheel');
+    if (!canvas) return;
+
+    // Remove existing highlight
+    this.removeRingHighlight();
+
+    // Create precise ring highlight based on canvas dimensions
+    const canvasRect = canvas.getBoundingClientRect();
+    const size = Math.min(canvasRect.width, canvasRect.height);
+    const centerX = canvasRect.left + canvasRect.width / 2;
+    const centerY = canvasRect.top + canvasRect.height / 2;
+
+    this.createRingHighlight(this.activeRing, size, centerX, centerY);
+  }
+
+  /**
+   * Create a precise SVG highlight for a specific ring
+   */
+  static createRingHighlight(ringType, size, centerX, centerY) {
+    // Ring dimensions based on Wheel.js drawing code
+    const outerRadius = size * 0.5;
+    const middleOuterRadius = size * 0.35;  
+    const innerRadius = size * 0.2;
+
+    let highlightPath = '';
+    let strokeColor = '';
+    let highlightId = '';
+
+    switch (ringType) {
+      case 'pitch':
+        // Outer ring (pitch class): between size*0.35 and size*0.5
+        highlightPath = this.createRingPath(centerX, centerY, middleOuterRadius, outerRadius);
+        strokeColor = '#ff6b6b';
+        highlightId = 'pitch-highlight';
+        break;
+      
+      case 'degree':
+        // Middle ring (degree): between size*0.2 and size*0.35
+        highlightPath = this.createRingPath(centerX, centerY, innerRadius, middleOuterRadius);
+        strokeColor = '#4ecdc4';
+        highlightId = 'degree-highlight';
+        break;
+      
+      case 'chromatic':
+        // Inner circle (chromatic): radius size*0.2
+        highlightPath = this.createCirclePath(centerX, centerY, innerRadius);
+        strokeColor = '#ffe66d';
+        highlightId = 'chromatic-highlight';
+        break;
+      
+      case 'intervals':
+        // Same as degree ring for now - can be customized later
+        highlightPath = this.createRingPath(centerX, centerY, innerRadius, middleOuterRadius);
+        strokeColor = '#a8e6cf';
+        highlightId = 'intervals-highlight';
+        break;
+    }
+
+    // Create SVG overlay
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'ring-highlight-overlay';
+    svg.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1000;
+    `;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', highlightPath);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', strokeColor);
+    path.setAttribute('stroke-width', '4');
+    path.setAttribute('stroke-dasharray', '8,4');
+    path.style.filter = 'drop-shadow(0 0 6px ' + strokeColor + ')';
+
+    // Add pulsing animation (only if user doesn't prefer reduced motion)
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+      animate.setAttribute('attributeName', 'stroke-opacity');
+      animate.setAttribute('values', '0.7;1;0.7');
+      animate.setAttribute('dur', '2s');
+      animate.setAttribute('repeatCount', 'indefinite');
+      path.appendChild(animate);
+    } else {
+      // Static highlight for reduced motion
+      path.setAttribute('stroke-opacity', '0.9');
+    }
+
+    svg.appendChild(path);
+    document.body.appendChild(svg);
+  }
+
+  /**
+   * Create SVG path for a ring (annulus)
+   */
+  static createRingPath(centerX, centerY, innerR, outerR) {
+    // Create a ring path using SVG path commands
+    return `
+      M ${centerX - outerR} ${centerY}
+      A ${outerR} ${outerR} 0 1 1 ${centerX + outerR} ${centerY}
+      A ${outerR} ${outerR} 0 1 1 ${centerX - outerR} ${centerY}
+      M ${centerX - innerR} ${centerY}
+      A ${innerR} ${innerR} 0 1 0 ${centerX + innerR} ${centerY}
+      A ${innerR} ${innerR} 0 1 0 ${centerX - innerR} ${centerY}
+      Z
+    `.replace(/\s+/g, ' ').trim();
+  }
+
+  /**
+   * Create SVG path for a circle
+   */
+  static createCirclePath(centerX, centerY, radius) {
+    return `
+      M ${centerX - radius} ${centerY}
+      A ${radius} ${radius} 0 1 1 ${centerX + radius} ${centerY}
+      A ${radius} ${radius} 0 1 1 ${centerX - radius} ${centerY}
+      Z
+    `.replace(/\s+/g, ' ').trim();
+  }
+
+  /**
+   * Remove existing ring highlight
+   */
+  static removeRingHighlight() {
+    const existingHighlight = document.getElementById('ring-highlight-overlay');
+    if (existingHighlight) {
+      existingHighlight.remove();
+    }
+  }
 
   /**
    * Initialize keyboard management
@@ -25,6 +171,7 @@ export class KeyboardManager {
       this.bindEvents();
       this.initFocusManagement();
       
+      // Don't show ring highlighting by default - only when keyboard is actually used
       console.log('Keyboard navigation initialized');
     } catch (error) {
       ErrorHandler.handle(error, CONFIG.ERROR_HANDLING.CONTEXTS.UI);
@@ -57,17 +204,19 @@ export class KeyboardManager {
     this.keyMap.set('Space', { action: 'togglePlayback', description: 'Play/pause scale' });
     this.keyMap.set('Enter', { action: 'togglePlayback', description: 'Play/pause scale' });
     this.keyMap.set('Escape', { action: 'closeSidebar', description: 'Close sidebar' });
-    this.keyMap.set('Tab', { action: 'handleTabNavigation', description: 'Navigate between elements' });
     
-    // Settings shortcuts
-    this.keyMap.set('s', { action: 'toggleSidebar', description: 'Toggle settings sidebar' });
+    // Settings shortcuts - match sidebar documentation
+    this.keyMap.set('F1', { action: 'toggleSidebar', description: 'Open/close settings' });
+    this.keyMap.set('v', { action: 'toggleOrientation', description: 'Toggle vertical/horizontal layout' });
+    this.keyMap.set('V', { action: 'toggleOrientation', description: 'Toggle vertical/horizontal layout' });
     this.keyMap.set('d', { action: 'toggleDarkMode', description: 'Toggle dark mode' });
-    this.keyMap.set('o', { action: 'toggleOrientation', description: 'Toggle horizontal/vertical layout' });
     this.keyMap.set('h', { action: 'toggleHelp', description: 'Show/hide keyboard shortcuts' });
     
-    // Accidental toggles
+    // Accidental toggles - match sidebar documentation  
     this.keyMap.set('f', { action: 'toggleFlat', description: 'Toggle flat note names' });
-    this.keyMap.set('F', { action: 'toggleSharp', description: 'Toggle sharp note names' });
+    this.keyMap.set('F', { action: 'toggleFlat', description: 'Toggle flat note names' });
+    this.keyMap.set('s', { action: 'toggleSharp', description: 'Toggle sharp note names' });
+    this.keyMap.set('S', { action: 'toggleSharp', description: 'Toggle sharp note names' });
     
     // Reset and utility
     this.keyMap.set('r', { action: 'resetRings', description: 'Reset all rings to starting position' });
@@ -105,20 +254,7 @@ export class KeyboardManager {
    * Initialize focus management
    */
   static initFocusManagement() {
-    // Make the main canvas focusable
-    const canvas = document.querySelector('#chromaWheel');
-    if (canvas) {
-      canvas.setAttribute('tabindex', '0');
-      canvas.setAttribute('role', 'application');
-      canvas.setAttribute('aria-label', 'Diatonic Compass wheel - use arrow keys to rotate rings, space to play scale');
-      
-      canvas.addEventListener('focus', () => {
-        this.focusedElement = 'canvas';
-        this.announceInstructions();
-      });
-    }
-
-    // Set up focus indicators
+    // Set up focus indicators (just for keyboard help overlay)
     this.setupFocusIndicators();
   }
 
@@ -128,11 +264,6 @@ export class KeyboardManager {
   static setupFocusIndicators() {
     const style = document.createElement('style');
     style.textContent = `
-      .keyboard-focus {
-        outline: 3px solid #33c6dc !important;
-        outline-offset: 2px !important;
-      }
-      
       .keyboard-help-overlay {
         position: fixed;
         top: 50%;
@@ -188,6 +319,22 @@ export class KeyboardManager {
       }
     `;
     document.head.appendChild(style);
+    
+    // Set up resize handler to update ring highlights
+    this.setupResizeHandler();
+  }
+
+  /**
+   * Set up window resize handler to update ring highlights
+   */
+  static setupResizeHandler() {
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        this.updateRingHighlights();
+      }, 100);
+    });
   }
 
   /**
@@ -251,7 +398,7 @@ export class KeyboardManager {
     const command = this.keyMap.get(key);
     
     // Prevent default for our handled keys, but allow normal browser behavior for others
-    return !!command && !['Tab', 'Escape'].includes(e.key);
+    return !!command && !['Escape'].includes(e.key);
   }
 
   /**
@@ -262,17 +409,20 @@ export class KeyboardManager {
     
     switch (command.action) {
       case 'rotatePitchClass':
+        this.setActiveRing('pitch');
         this.rotateRing('pitchClass', command.direction * stepSize);
         this.announceRingPosition('pitch');
         break;
         
       case 'rotateDegree':
+        this.setActiveRing('degree');
         this.rotateRing('degree', command.direction * stepSize);
         this.rotateRing('highlightPosition', command.direction * stepSize);
         this.announceRingPosition('degree');
         break;
         
       case 'rotateChromatic':
+        this.setActiveRing('chromatic');
         this.rotateAllRings(command.direction * stepSize);
         this.announceRingPosition('chromatic');
         break;
@@ -331,9 +481,6 @@ export class KeyboardManager {
         this.toggleKeyboardHelp();
         break;
         
-      case 'handleTabNavigation':
-        this.handleTabNavigation(event);
-        break;
     }
   }
 
@@ -366,21 +513,6 @@ export class KeyboardManager {
     this.announce(`Selected note ${noteIndex + 1}`);
   }
 
-  /**
-   * Handle tab navigation between focusable elements
-   */
-  static handleTabNavigation(event) {
-    const focusableElements = [
-      '#chromaWheel',
-      '#settings-btn',
-      '#result-container',
-      '.accidental-toggle',
-      '.sidebar-btn'
-    ];
-    
-    // Let normal tab behavior handle this
-    // We just ensure our elements are properly focusable
-  }
 
   /**
    * Toggle keyboard help overlay
@@ -464,12 +596,6 @@ export class KeyboardManager {
     this.announce(message);
   }
 
-  /**
-   * Announce instructions when canvas gains focus
-   */
-  static announceInstructions() {
-    this.announce('Diatonic Compass focused. Use arrow keys to rotate rings, space to play scale, H for help.');
-  }
 
   /**
    * Announce message to screen readers
@@ -511,6 +637,7 @@ export class KeyboardManager {
    */
   static disable() {
     this.isEnabled = false;
+    this.removeRingHighlight(); // Clean up any active highlights
     this.announce('Keyboard navigation disabled');
   }
 

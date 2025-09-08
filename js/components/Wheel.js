@@ -1,7 +1,7 @@
 // (file path: js/components/Wheel.js)
 
 import { snapRing, snapChromaticAndSettleMode, snapDegreeToDiatonic } from '../core/animation.js';
-import { setRingAngle, coRotateRings } from '../core/actions.js';
+import { setRingAngle, rotateCoupledRings } from '../core/actions.js';
 import { SEMITONES, ANGLE_STEP, FONT_FACTOR_OUTER, FONT_FACTOR_MIDDLE, FONT_FACTOR_INNER, FIXED_INTERVAL_COLOUR, PIANO_KEY_COLOUR } from '../core/constants.js';
 import { getContrastColor } from '../core/color.js';
 
@@ -84,7 +84,7 @@ export default class Wheel {
           setRingAngle('degree', s.startDegree + deltaAngle);
           setRingAngle('highlightPosition', s.startHighlight + deltaAngle);
         } else if (s.active === 'chromatic') {
-           coRotateRings({
+           rotateCoupledRings({
               startPitchClass: s.startPitchClass,
               startDegree: s.startDegree,
               startChrom: s.startChrom,

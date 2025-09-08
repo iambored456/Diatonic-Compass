@@ -51,7 +51,7 @@ export function snapRing(ringKey, onComplete){
 }
 
 // MODIFICATION: Function added back in.
-export function snapTransposeRings(onComplete) {
+export function alignPitchClassWithDegreeOffset(onComplete) {
   // LOG: Log transpose snap.
   const { pitchClass, degree } = appState.rings;
   

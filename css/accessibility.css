@@ -15,25 +15,6 @@
   border: 0 !important;
 }
 
-/* Skip link for keyboard navigation */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 6px;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  padding: 8px;
-  z-index: 10000;
-  text-decoration: none;
-  border-radius: 4px;
-  border: 2px solid #33c6dc;
-  transition: top 0.3s;
-}
-
-.skip-link:focus {
-  top: 6px;
-}
-
 /* Enhanced focus indicators */
 *:focus {
   outline: 2px solid #33c6dc;

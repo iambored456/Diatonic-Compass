@@ -17,6 +17,7 @@ export const DIATONIC_INTERVALS = [
 ];
 
 export const SEMITONES = [...Array(12).keys()];
+export const CHROMATIC_DIVISIONS = 12; // Number of semitones in an octave
 export const DIATONIC_DEGREE_INDICES = [0,2,4,5,7,9,11];
 
 export const PIANO_KEY_COLOUR = {

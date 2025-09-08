@@ -35,6 +35,12 @@ export const appState = {
     tracks: {},             // References to belt track elements
     init: false,            // Whether belts are initialized
     orientation: 'horizontal', // 'horizontal' or 'vertical'
+    order: ['pitch', 'degree', 'intervals', 'chromatic'], // Order of belt display
+    // Layout order for all components
+    layoutOrder: {
+      horizontal: ['compass', 'pitch', 'degree', 'intervals', 'chromatic', 'result'],
+      vertical: ['compass', 'result'] // result contains the belts as children
+    }
   },
   
   dimensions: { 
@@ -97,6 +103,11 @@ export function getDefaultState() {
       tracks: {}, 
       init: false,
       orientation: 'horizontal',
+      order: ['pitch', 'degree', 'intervals', 'chromatic'],
+      layoutOrder: {
+        horizontal: ['compass', 'pitch', 'degree', 'intervals', 'chromatic', 'result'],
+        vertical: ['compass', 'result']
+      }
     },
     dimensions: { 
       size: 0, cx: 0, cy: 0, dpr: 1 
