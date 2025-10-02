@@ -2,9 +2,12 @@
 
 import { ActionController } from '../core/ActionController.js';
 import { ErrorHandler } from '../utils/ErrorHandler.js';
-import { CONFIG } from '../core/constants.js';
+import { CONFIG, DIATONIC_DEGREE_INDICES, MAJOR_SCALE_INTERVAL_STEPS, ANGLE_STEP } from '../core/constants.js';
 import { normAngle } from '../core/math.js';
 import { appState } from '../state/appState.js';
+import { snapRing, snapDegreeToDiatonic, snapChromaticAndSettleMode, startSnap } from '../core/animation.js';
+import { setRingAngle } from '../core/actions.js';
+import { indexAtTop } from '../core/math.js';
 
 /**
  * Comprehensive keyboard navigation manager for Diatonic Compass
@@ -21,146 +24,9 @@ export class KeyboardManager {
    */
   static setActiveRing(ringType) {
     this.activeRing = ringType;
-    this.updateRingHighlights();
+    // Highlights removed - no visual indication needed
   }
 
-  /**
-   * Update visual highlights to show which ring is active
-   */
-  static updateRingHighlights() {
-    const canvas = document.getElementById('chromaWheel');
-    if (!canvas) return;
-
-    // Remove existing highlight
-    this.removeRingHighlight();
-
-    // Create precise ring highlight based on canvas dimensions
-    const canvasRect = canvas.getBoundingClientRect();
-    const size = Math.min(canvasRect.width, canvasRect.height);
-    const centerX = canvasRect.left + canvasRect.width / 2;
-    const centerY = canvasRect.top + canvasRect.height / 2;
-
-    this.createRingHighlight(this.activeRing, size, centerX, centerY);
-  }
-
-  /**
-   * Create a precise SVG highlight for a specific ring
-   */
-  static createRingHighlight(ringType, size, centerX, centerY) {
-    // Ring dimensions based on Wheel.js drawing code
-    const outerRadius = size * 0.5;
-    const middleOuterRadius = size * 0.35;  
-    const innerRadius = size * 0.2;
-
-    let highlightPath = '';
-    let strokeColor = '';
-    let highlightId = '';
-
-    switch (ringType) {
-      case 'pitch':
-        // Outer ring (pitch class): between size*0.35 and size*0.5
-        highlightPath = this.createRingPath(centerX, centerY, middleOuterRadius, outerRadius);
-        strokeColor = '#ff6b6b';
-        highlightId = 'pitch-highlight';
-        break;
-      
-      case 'degree':
-        // Middle ring (degree): between size*0.2 and size*0.35
-        highlightPath = this.createRingPath(centerX, centerY, innerRadius, middleOuterRadius);
-        strokeColor = '#4ecdc4';
-        highlightId = 'degree-highlight';
-        break;
-      
-      case 'chromatic':
-        // Inner circle (chromatic): radius size*0.2
-        highlightPath = this.createCirclePath(centerX, centerY, innerRadius);
-        strokeColor = '#ffe66d';
-        highlightId = 'chromatic-highlight';
-        break;
-      
-      case 'intervals':
-        // Same as degree ring for now - can be customized later
-        highlightPath = this.createRingPath(centerX, centerY, innerRadius, middleOuterRadius);
-        strokeColor = '#a8e6cf';
-        highlightId = 'intervals-highlight';
-        break;
-    }
-
-    // Create SVG overlay
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.id = 'ring-highlight-overlay';
-    svg.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      z-index: 1000;
-    `;
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', highlightPath);
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', strokeColor);
-    path.setAttribute('stroke-width', '4');
-    path.setAttribute('stroke-dasharray', '8,4');
-    path.style.filter = 'drop-shadow(0 0 6px ' + strokeColor + ')';
-
-    // Add pulsing animation (only if user doesn't prefer reduced motion)
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
-      animate.setAttribute('attributeName', 'stroke-opacity');
-      animate.setAttribute('values', '0.7;1;0.7');
-      animate.setAttribute('dur', '2s');
-      animate.setAttribute('repeatCount', 'indefinite');
-      path.appendChild(animate);
-    } else {
-      // Static highlight for reduced motion
-      path.setAttribute('stroke-opacity', '0.9');
-    }
-
-    svg.appendChild(path);
-    document.body.appendChild(svg);
-  }
-
-  /**
-   * Create SVG path for a ring (annulus)
-   */
-  static createRingPath(centerX, centerY, innerR, outerR) {
-    // Create a ring path using SVG path commands
-    return `
-      M ${centerX - outerR} ${centerY}
-      A ${outerR} ${outerR} 0 1 1 ${centerX + outerR} ${centerY}
-      A ${outerR} ${outerR} 0 1 1 ${centerX - outerR} ${centerY}
-      M ${centerX - innerR} ${centerY}
-      A ${innerR} ${innerR} 0 1 0 ${centerX + innerR} ${centerY}
-      A ${innerR} ${innerR} 0 1 0 ${centerX - innerR} ${centerY}
-      Z
-    `.replace(/\s+/g, ' ').trim();
-  }
-
-  /**
-   * Create SVG path for a circle
-   */
-  static createCirclePath(centerX, centerY, radius) {
-    return `
-      M ${centerX - radius} ${centerY}
-      A ${radius} ${radius} 0 1 1 ${centerX + radius} ${centerY}
-      A ${radius} ${radius} 0 1 1 ${centerX - radius} ${centerY}
-      Z
-    `.replace(/\s+/g, ' ').trim();
-  }
-
-  /**
-   * Remove existing ring highlight
-   */
-  static removeRingHighlight() {
-    const existingHighlight = document.getElementById('ring-highlight-overlay');
-    if (existingHighlight) {
-      existingHighlight.remove();
-    }
-  }
 
   /**
    * Initialize keyboard management
@@ -201,7 +67,7 @@ export class KeyboardManager {
     this.keyMap.set('Ctrl+ArrowDown', { action: 'rotateDegree', direction: -3, description: 'Rotate degree ring down (large step)' });
 
     // Audio and UI controls
-    this.keyMap.set('Space', { action: 'togglePlayback', description: 'Play/pause scale' });
+    this.keyMap.set(' ', { action: 'togglePlayback', description: 'Play/pause scale (Space)' });
     this.keyMap.set('Enter', { action: 'togglePlayback', description: 'Play/pause scale' });
     this.keyMap.set('Escape', { action: 'closeSidebar', description: 'Close sidebar' });
     
@@ -280,19 +146,19 @@ export class KeyboardManager {
         overflow-y: auto;
         border: 2px solid #33c6dc;
       }
-      
+
       .keyboard-help-overlay h2 {
         margin-top: 0;
         color: #33c6dc;
       }
-      
+
       .keyboard-help-shortcuts {
         display: grid;
         grid-template-columns: auto 1fr;
         gap: 0.5rem 1rem;
         margin: 1rem 0;
       }
-      
+
       .keyboard-help-key {
         background: #f0f0f0;
         color: #333;
@@ -303,11 +169,11 @@ export class KeyboardManager {
         text-align: center;
         min-width: 3rem;
       }
-      
+
       .keyboard-help-description {
         padding: 0.25rem 0;
       }
-      
+
       .keyboard-help-close {
         background: #33c6dc;
         color: white;
@@ -319,22 +185,6 @@ export class KeyboardManager {
       }
     `;
     document.head.appendChild(style);
-    
-    // Set up resize handler to update ring highlights
-    this.setupResizeHandler();
-  }
-
-  /**
-   * Set up window resize handler to update ring highlights
-   */
-  static setupResizeHandler() {
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        this.updateRingHighlights();
-      }, 100);
-    });
   }
 
   /**
@@ -342,18 +192,37 @@ export class KeyboardManager {
    */
   static handleKeyDown(e) {
     try {
-      if (!this.isEnabled) return;
-      
+      console.log('=== KeyboardManager.handleKeyDown ===');
+      console.log('Key pressed:', e.key);
+      console.log('isEnabled:', this.isEnabled);
+
+      if (!this.isEnabled) {
+        console.log('Keyboard manager disabled, returning');
+        return;
+      }
+
       // Don't interfere with text inputs
-      if (this.isTextInputActive()) return;
-      
+      const isTextInput = this.isTextInputActive();
+      console.log('isTextInputActive:', isTextInput);
+      if (isTextInput) {
+        console.log('Text input active, returning');
+        return;
+      }
+
       const key = this.getKeyString(e);
+      console.log('Key string with modifiers:', key);
+
       const command = this.keyMap.get(key);
-      
+      console.log('Command found:', command);
+
       if (command) {
+        console.log('Executing command:', command.action);
         this.executeCommand(command, e);
+      } else {
+        console.log('No command mapped for key:', key);
       }
     } catch (error) {
+      console.error('Error in handleKeyDown:', error);
       ErrorHandler.handle(error, CONFIG.ERROR_HANDLING.CONTEXTS.UI);
     }
   }
@@ -392,13 +261,23 @@ export class KeyboardManager {
    * Check if we should prevent default for this key event
    */
   static shouldPreventDefault(e) {
-    if (this.isTextInputActive()) return false;
-    
+    console.log('=== shouldPreventDefault ===');
+    console.log('Key:', e.key);
+
+    if (this.isTextInputActive()) {
+      console.log('Text input active, not preventing default');
+      return false;
+    }
+
     const key = this.getKeyString(e);
     const command = this.keyMap.get(key);
-    
+
+    const shouldPrevent = !!command && !['Escape'].includes(e.key);
+    console.log('Command found:', !!command);
+    console.log('Should prevent default:', shouldPrevent);
+
     // Prevent default for our handled keys, but allow normal browser behavior for others
-    return !!command && !['Escape'].includes(e.key);
+    return shouldPrevent;
   }
 
   /**
@@ -406,24 +285,23 @@ export class KeyboardManager {
    */
   static executeCommand(command, event) {
     const stepSize = this.navigationMode === 'fine' ? 0.5 : 1;
-    
+
     switch (command.action) {
       case 'rotatePitchClass':
         this.setActiveRing('pitch');
-        this.rotateRing('pitchClass', command.direction * stepSize);
+        this.rotateRingAndSnap('pitchClass', command.direction * stepSize);
         this.announceRingPosition('pitch');
         break;
-        
+
       case 'rotateDegree':
         this.setActiveRing('degree');
-        this.rotateRing('degree', command.direction * stepSize);
-        this.rotateRing('highlightPosition', command.direction * stepSize);
+        this.rotateRingAndSnap('degree', command.direction * stepSize);
         this.announceRingPosition('degree');
         break;
-        
+
       case 'rotateChromatic':
         this.setActiveRing('chromatic');
-        this.rotateAllRings(command.direction * stepSize);
+        this.rotateAllRingsAndSnap(command.direction * stepSize);
         this.announceRingPosition('chromatic');
         break;
         
@@ -485,22 +363,98 @@ export class KeyboardManager {
   }
 
   /**
-   * Rotate a specific ring by steps
+   * Rotate a specific ring by steps and snap to nearest position
    */
-  static rotateRing(ringName, steps) {
-    const currentAngle = appState.rings[ringName];
-    const newAngle = normAngle(currentAngle + (steps * CONFIG.WHEEL.SEGMENTS / 12));
-    ActionController.setRingAngle(ringName, newAngle);
+  static rotateRingAndSnap(ringName, steps) {
+    if (ringName === 'degree') {
+      // For degree ring, jump to next/previous diatonic degree with animation
+      this.rotateDegreeRingDiatonically(steps);
+    } else if (ringName === 'pitchClass') {
+      // For pitch class ring, move by semitone steps with animation
+      const stepAngle = steps * (Math.PI * 2 / 12);
+      const currentAngle = appState.rings.pitchClass;
+      const targetAngle = normAngle(currentAngle + stepAngle);
+
+      // Calculate the snapped target (nearest semitone)
+      const targetIndex = Math.round(-targetAngle / ANGLE_STEP);
+      const snappedTarget = normAngle(-targetIndex * ANGLE_STEP);
+
+      // Animate to the snapped position
+      startSnap({
+        pitchClass: snappedTarget
+      });
+    }
   }
 
   /**
-   * Rotate all rings together (chromatic control)
+   * Rotate the degree ring to the next/previous diatonic degree
+   * Follows the major scale interval pattern: +2, +2, +1, +2, +2, +2, +1
    */
-  static rotateAllRings(steps) {
-    const stepAngle = steps * (CONFIG.WHEEL.SEGMENTS / 12);
-    ['pitchClass', 'degree', 'chromatic', 'highlightPosition'].forEach(ring => {
-      const currentAngle = appState.rings[ring];
-      ActionController.setRingAngle(ring, normAngle(currentAngle + stepAngle));
+  static rotateDegreeRingDiatonically(steps) {
+    const { degree, chromatic } = appState.rings;
+    const effectiveDegreeRotation = normAngle(degree - chromatic);
+
+    // Find current diatonic degree index (0-6)
+    const currentRelativeIndexFloat = normAngle(-effectiveDegreeRotation) / ANGLE_STEP;
+
+    // Find the closest current diatonic index
+    let currentDiatonicIndex = 0;
+    let minDiff = Infinity;
+
+    DIATONIC_DEGREE_INDICES.forEach((validIndex, i) => {
+      const diff = Math.abs(currentRelativeIndexFloat - validIndex);
+      const circularDiff = Math.min(diff, 12 - diff);
+
+      if (circularDiff < minDiff) {
+        minDiff = circularDiff;
+        currentDiatonicIndex = i; // Store the index in DIATONIC_DEGREE_INDICES array (0-6)
+      }
+    });
+
+    // Move to next/previous diatonic degree based on direction
+    const direction = steps > 0 ? 1 : -1;
+    const targetDiatonicIndex = (currentDiatonicIndex + direction + 7) % 7;
+    const targetSemitoneIndex = DIATONIC_DEGREE_INDICES[targetDiatonicIndex];
+
+    // Calculate target angle
+    const targetEffectiveRotation = normAngle(-targetSemitoneIndex * ANGLE_STEP);
+    const targetDegree = normAngle(targetEffectiveRotation + chromatic);
+
+    // Animate to the target position
+    startSnap({
+      degree: targetDegree,
+      highlightPosition: targetDegree
+    });
+  }
+
+  /**
+   * Rotate all rings together (chromatic control) and snap
+   */
+  static rotateAllRingsAndSnap(steps) {
+    const stepAngle = steps * (Math.PI * 2 / 12);
+
+    // Calculate target angles for all rings
+    const targetPitchClass = normAngle(appState.rings.pitchClass + stepAngle);
+    const targetDegree = normAngle(appState.rings.degree + stepAngle);
+    const targetChromatic = normAngle(appState.rings.chromatic + stepAngle);
+
+    // Calculate snapped chromatic position
+    const chromIdx = Math.round(-targetChromatic / ANGLE_STEP);
+    const snappedChromatic = normAngle(-chromIdx * ANGLE_STEP);
+
+    // Calculate how much the chromatic ring needs to snap
+    const snapDelta = snappedChromatic - targetChromatic;
+
+    // Apply the snap delta to pitch and degree rings too
+    const snappedPitchClass = normAngle(targetPitchClass + snapDelta);
+    const snappedDegree = normAngle(targetDegree + snapDelta);
+
+    // Animate all rings to their snapped positions
+    startSnap({
+      pitchClass: snappedPitchClass,
+      degree: snappedDegree,
+      chromatic: snappedChromatic,
+      highlightPosition: snappedDegree
     });
   }
 
@@ -637,7 +591,6 @@ export class KeyboardManager {
    */
   static disable() {
     this.isEnabled = false;
-    this.removeRingHighlight(); // Clean up any active highlights
     this.announce('Keyboard navigation disabled');
   }
 

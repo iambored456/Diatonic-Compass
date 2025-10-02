@@ -25,6 +25,7 @@ export default class UIControls {
     
     this._initListeners();
     this._initBeltOrderManager();
+    this._loadSavedPreferences();
   }
 
   _initListeners() {
@@ -74,7 +75,29 @@ export default class UIControls {
     });
 
     this.elements.startTutorialBtn.addEventListener('click', this.callbacks.onStartTutorial);
-    
+
+    // Cursor color picker buttons
+    const cursorColorButtons = document.querySelectorAll('.cursor-color-btn');
+    cursorColorButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const color = button.dataset.color;
+        const hasFill = button.dataset.fill === 'true';
+
+        // Update active state
+        cursorColorButtons.forEach(btn => {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-checked', 'false');
+        });
+        button.classList.add('active');
+        button.setAttribute('aria-checked', 'true');
+
+        // Call callback
+        if (this.callbacks.onSetCursorColor) {
+          this.callbacks.onSetCursorColor(color, hasFill);
+        }
+      });
+    });
+
     // Make entire toggle switches clickable
     const orientationToggle = document.getElementById('orientation-toggle');
     const themeToggle = document.getElementById('theme-toggle');
@@ -111,7 +134,7 @@ export default class UIControls {
   _initBeltOrderManager() {
     try {
       this.orderManager = new OrderManager();
-      
+
       // Set up callback for when order changes
       this.orderManager.setOrderChangeCallback((layoutOrder, beltOrder) => {
         // Trigger a redraw or other updates if needed
@@ -119,9 +142,37 @@ export default class UIControls {
           this.callbacks.onOrderChange(layoutOrder, beltOrder);
         }
       });
-      
+
     } catch (error) {
       console.warn('Order Manager failed to initialize:', error);
+    }
+  }
+
+  async _loadSavedPreferences() {
+    try {
+      const { loadPreferences } = await import('../services/PreferencesService.js');
+      const prefs = loadPreferences();
+
+      if (prefs) {
+        // Load cursor color preferences
+        if (prefs.cursorColor && prefs.cursorFill !== undefined) {
+          this.state.ui.cursorColor = prefs.cursorColor;
+          this.state.ui.cursorFill = prefs.cursorFill;
+
+          // Update button active states
+          const cursorColorButtons = document.querySelectorAll('.cursor-color-btn');
+          cursorColorButtons.forEach(button => {
+            const matchesColor = button.dataset.color === prefs.cursorColor;
+            const matchesFill = button.dataset.fill === String(prefs.cursorFill);
+            const isActive = matchesColor && matchesFill;
+
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-checked', String(isActive));
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('Could not load saved cursor preferences:', error);
     }
   }
 

@@ -1,0 +1,108 @@
+/* Performance optimizations for Diatonic Compass */
+
+/* GPU acceleration for animated elements */
+#chromaWheel {
+  will-change: contents;
+  backface-visibility: hidden;
+  /* transform is not needed - canvas doesn't transform */
+}
+
+/* Optimize belt tracks that constantly transform */
+.belt-track {
+  will-change: transform;
+  /* Ensure sharp rendering */
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  /* transform is applied dynamically via JS - don't set static value */
+}
+
+.interval-brackets-track {
+  will-change: transform;
+  backface-visibility: hidden;
+  /* transform is applied dynamically via JS - don't set static value */
+}
+
+#belt-cursor,
+#belt-flash-overlay {
+  will-change: transform;
+  backface-visibility: hidden;
+  /* transform is applied dynamically via JS - don't set static value */
+}
+
+/* Optimize containers that change orientation */
+.belts-container,
+.main-container {
+  /* Hint browser about layout changes */
+  contain: layout style;
+}
+
+/* Optimize wheel container */
+.wheel-container {
+  contain: layout;
+  /* No transform needed - layout uses flexbox/grid */
+}
+
+/* Optimize sidebar animations */
+#sidebar {
+  will-change: transform;
+  backface-visibility: hidden;
+  /* Note: transform is handled by main.css - don't override here */
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Remove will-change to reduce GPU usage */
+  .belt-track,
+  .interval-brackets-track,
+  #belt-cursor,
+  #belt-flash-overlay,
+  #sidebar {
+    will-change: auto;
+  }
+}
+
+/* Low-power mode optimizations (applied via JS) */
+body.low-power-mode {
+  /* Disable expensive effects */
+}
+
+body.low-power-mode .belt-track,
+body.low-power-mode .interval-brackets-track {
+  /* Reduce quality for performance */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+body.low-power-mode #chromaWheel {
+  /* Hint for lower quality rendering */
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Optimize text rendering in belts */
+.belt-cell {
+  /* Optimize text rendering */
+  text-rendering: optimizeSpeed;
+  /* Prevent text selection overhead */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Container query optimization hints */
+.main-container {
+  /* Enable container queries efficiently */
+  container-type: size;
+}
+
+/* Paint containment for independent components */
+.wheel-container,
+.belts-container,
+#result-container {
+  /* Isolate paint to improve performance */
+  contain: paint layout;
+}

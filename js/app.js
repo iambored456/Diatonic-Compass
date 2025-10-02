@@ -9,6 +9,7 @@ import { ActionController } from './core/ActionController.js';
 import { startTutorial } from './tutorial.js';
 import { ErrorHandler } from './utils/ErrorHandler.js';
 import { PerformanceUtils } from './utils/PerformanceUtils.js';
+import { StateTracker } from './utils/StateTracker.js';
 
 import Wheel from './components/Wheel.js';
 import Belts from './components/Belts.js';
@@ -109,6 +110,10 @@ export default class App {
         console.log('Order change triggered:', { layoutOrder, beltOrder });
         this._applyComponentOrder(layoutOrder, beltOrder);
       }, 'UI'),
+      onSetCursorColor: ErrorHandler.wrap((color, hasFill) => {
+        ActionController.setCursorColor(color, hasFill);
+        this._announceChange(`Cursor color changed to ${color}${hasFill ? ' with fill' : ''}`);
+      }, 'UI'),
     };
 
     // Initialize components with error handling
@@ -151,13 +156,14 @@ export default class App {
       });
     }
 
-    // Set up performance monitoring in development
-    if (this._isDevelopment()) {
-      this._setupPerformanceMonitoring();
-    }
+    // Set up performance monitoring (now runs on all devices to detect low-end hardware)
+    this._setupPerformanceMonitoring();
 
     // Monitor for accessibility preferences changes
     this._setupAccessibilityMonitoring();
+
+    // Force an initial render to ensure everything draws properly
+    StateTracker.markDirty(this.state);
 
     this.isInitialized = true;
   }
@@ -720,20 +726,20 @@ Focus the wheel or belts first, then use arrow keys to rotate rings.
       try {
         const isWide = window.innerWidth > window.innerHeight;
         const newOrientation = isWide ? 'vertical' : 'horizontal';
-        
+
         if (this.state.belts.orientation !== newOrientation) {
           ActionController.setOrientation(newOrientation);
           this._announceChange(`Layout changed to ${newOrientation}`);
-        } else {
-          // Just redraw without changing orientation
-          this.redraw(performance.now());
         }
+
+        // Mark dirty to ensure redraw after resize
+        StateTracker.markDirty(this.state);
       } catch (error) {
         ErrorHandler.handle(error, 'Resize', () => {
           console.warn('Resize handling failed');
         });
       }
-    }, 150); // 150ms debounce for responsive but not excessive updates
+    }, 250); // 250ms debounce - increased for better performance on low-end devices
 
     // Add resize listener
     window.addEventListener('resize', debouncedHandleResize);
@@ -755,10 +761,33 @@ Focus the wheel or belts first, then use arrow keys to rotate rings.
   }
 
   _setupPerformanceMonitoring() {
-    // FPS monitoring for development
+    let lowFPSCount = 0;
+    const FPS_CHECK_THRESHOLD = 3; // Number of low FPS readings before enabling low-power mode
+
+    // FPS monitoring for all devices (not just development)
     this.performanceMonitor = PerformanceUtils.createFPSMonitor((fps) => {
+      // Detect consistently low FPS
       if (fps < 30) {
-        console.warn(`Low FPS detected: ${fps}`);
+        lowFPSCount++;
+        console.warn(`Low FPS detected: ${fps} (count: ${lowFPSCount})`);
+
+        // Enable low-power mode after consistent low FPS
+        if (lowFPSCount >= FPS_CHECK_THRESHOLD && !this.state.performance.isLowPowerMode) {
+          this.state.performance.isLowPowerMode = true;
+          document.body.classList.add('low-power-mode');
+          console.log('Low-power mode enabled due to poor performance');
+          this._announceChange('Performance mode adjusted for this device');
+        }
+      } else if (fps >= 50) {
+        // Reset counter if FPS improves
+        lowFPSCount = Math.max(0, lowFPSCount - 1);
+
+        // Disable low-power mode if FPS is consistently good
+        if (lowFPSCount === 0 && this.state.performance.isLowPowerMode) {
+          this.state.performance.isLowPowerMode = false;
+          document.body.classList.remove('low-power-mode');
+          console.log('Low-power mode disabled - performance improved');
+        }
       }
     }, 120); // Check every 2 seconds
 
@@ -785,22 +814,41 @@ Focus the wheel or belts first, then use arrow keys to rotate rings.
 
   redraw(time) {
     try {
-      // Step animations first
-      stepAnim(time);
-      
+      // Step animations first (always runs, may update state)
+      const wasAnimating = stepAnim(time);
+
+      // PERFORMANCE: Skip rendering if state hasn't changed and not in low power mode
+      if (!this.state.performance.isLowPowerMode && !StateTracker.needsRedraw(this.state)) {
+        return;
+      }
+
       // Check and update canvas size with error handling
       const canvasResized = checkCanvasSize(this.elements.canvas, this.state.dimensions);
-      
+
+      // If canvas was resized, mark dirty
+      if (canvasResized) {
+        StateTracker.markDirty(this.state);
+      }
+
       // Skip render if no valid canvas size
       if (!this.state.dimensions.size) {
         return;
+      }
+
+      // PERFORMANCE: Adaptive frame skipping on low-end devices
+      if (this.state.performance.isLowPowerMode && wasAnimating) {
+        this.state.performance.frameSkipCounter++;
+        // Skip every other frame during animations on low-power devices
+        if (this.state.performance.frameSkipCounter % 2 === 1) {
+          return;
+        }
       }
 
       // Generate display labels (this will be memoized in logic.js)
       const labels = generateDisplayLabels(this.state);
       const { rings, playback } = this.state;
       const highlightPattern = DIATONIC_DEGREE_INDICES;
-    
+
       // Update components with error boundaries
       if (this.wheel) {
         try {
@@ -831,6 +879,9 @@ Focus the wheel or belts first, then use arrow keys to rotate rings.
           });
         }
       }
+
+      // Mark state as clean after successful render
+      StateTracker.markClean(this.state);
 
     } catch (error) {
       ErrorHandler.handle(error, 'RenderLoop', () => {

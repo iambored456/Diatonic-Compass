@@ -15,29 +15,26 @@
   border: 0 !important;
 }
 
-/* Enhanced focus indicators */
+/* Enhanced focus indicators - DISABLED */
 *:focus {
-  outline: 2px solid #33c6dc;
-  outline-offset: 2px;
+  outline: none;
 }
 
-/* Specific focus styles for interactive elements */
+/* Specific focus styles for interactive elements - DISABLED */
 canvas:focus,
 .belt:focus,
 button:focus,
 .accidental-toggle:focus {
-  outline: 3px solid #33c6dc;
-  outline-offset: 3px;
+  outline: none;
 }
 
-/* Focus visible only for keyboard navigation */
+/* Focus visible only for keyboard navigation - DISABLED */
 .js-focus-visible *:focus:not(.focus-visible) {
   outline: none;
 }
 
 .js-focus-visible *:focus.focus-visible {
-  outline: 3px solid #33c6dc;
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* High contrast mode support */
@@ -172,15 +169,14 @@ button:focus,
   opacity: 0.7;
 }
 
-/* Keyboard navigation indicators */
+/* Keyboard navigation indicators - DISABLED */
 .keyboard-navigation-active {
   /* Show focus more prominently when navigating with keyboard */
 }
 
 .keyboard-navigation-active *:focus {
-  outline: 3px solid #33c6dc;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 5px rgba(51, 198, 220, 0.3);
+  outline: none;
+  box-shadow: none;
 }
 
 /* Loading and error states for accessibility */
@@ -265,7 +261,7 @@ body.dark-mode {
 }
 
 body.dark-mode *:focus {
-  outline-color: #66d9ef; /* Slightly brighter blue for dark mode */
+  outline: none; /* Disabled */
 }
 
 body.dark-mode .error-state {
@@ -323,11 +319,10 @@ body.dark-mode .error-state {
   margin-bottom: 1.5em;
 }
 
-/* Support for alternative input methods */
+/* Support for alternative input methods - DISABLED */
 .switch-navigation *:focus {
-  outline: 4px solid #ffff00;
-  outline-offset: 4px;
-  background: rgba(255, 255, 0, 0.1);
+  outline: none;
+  background: transparent;
 }
 
 /* Cognitive accessibility - simplified interface mode */

@@ -88,6 +88,11 @@ export const ActionController = {
     try {
       const newState = typeof forceState === 'boolean' ? forceState : !appState.ui.sidebarOpen;
       appState.ui.sidebarOpen = newState;
+
+      // Mark state as dirty - will be detected by StateTracker automatically
+      if (appState.performance) {
+        appState.performance.needsRedraw = true;
+      }
     } catch (error) {
       ErrorHandler.handle(error, CONFIG.ERROR_HANDLING.CONTEXTS.UI);
     }
@@ -161,6 +166,35 @@ export const ActionController = {
       
       appState.rings[ringName] = angle;
       
+    } catch (error) {
+      ErrorHandler.handle(error, CONFIG.ERROR_HANDLING.CONTEXTS.UI);
+    }
+  },
+
+  /**
+   * Set cursor color
+   * @param {string} color - Color name ('red', 'blue', 'green', 'yellow')
+   * @param {boolean} hasFill - Whether cursor should have transparent fill
+   */
+  setCursorColor(color, hasFill) {
+    try {
+      const validColors = ['red', 'blue', 'green', 'yellow'];
+      if (!validColors.includes(color)) {
+        throw new Error(`Invalid cursor color: ${color}`);
+      }
+
+      appState.ui.cursorColor = color;
+      appState.ui.cursorFill = hasFill;
+
+      // Save to preferences
+      import('../services/PreferencesService.js').then(({ savePreferences }) => {
+        savePreferences({ cursorColor: color, cursorFill: hasFill });
+      });
+
+      // Mark state as dirty for redraw
+      if (appState.performance) {
+        appState.performance.needsRedraw = true;
+      }
     } catch (error) {
       ErrorHandler.handle(error, CONFIG.ERROR_HANDLING.CONTEXTS.UI);
     }

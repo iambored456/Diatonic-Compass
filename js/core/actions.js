@@ -2,16 +2,17 @@
 
 import { appState } from '../state/appState.js';
 import { normAngle } from './math.js';
+import { StateTracker } from '../utils/StateTracker.js';
 
 /**
  * @param {('pitchClass'|'degree'|'chromatic'|'highlightPosition')} ringKey
  * @param {number} angle
  */
 export function setRingAngle(ringKey, angle) {
-  // ... (this function is unchanged)
   if (appState.rings.hasOwnProperty(ringKey)) {
     const normalizedAngle = normAngle(angle);
     appState.rings[ringKey] = normalizedAngle;
+    StateTracker.markDirty(appState);
   }
 }
 
@@ -32,4 +33,6 @@ export function rotateCoupledRings(startAngles, functionalDelta, visualDelta) {
   appState.rings.pitchClass = normAngle(startAngles.startPitchClass + functionalDelta);
   appState.rings.degree = normAngle(startAngles.startDegree + functionalDelta);
   appState.rings.highlightPosition = normAngle(startAngles.startHighlight + functionalDelta);
+
+  StateTracker.markDirty(appState);
 }

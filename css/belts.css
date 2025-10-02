@@ -195,6 +195,7 @@ body.dark-mode .order-item.group {
   left: 0;
   width: calc(100% / 12);
   pointer-events: none;
+  background: rgba(255, 0, 0, 0.2);
   border: var(--border-width-cursor) solid red;
   border-radius: var(--radius-medium);
   z-index: 100;

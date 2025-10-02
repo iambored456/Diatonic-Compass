@@ -163,6 +163,12 @@ function validatePreferences(prefs) {
               validated[key] = defaultValue;
             }
             break;
+          case 'cursorColor':
+            validated[key] = ['red', 'blue', 'green', 'yellow'].includes(value) ? value : defaultValue;
+            break;
+          case 'cursorFill':
+            validated[key] = Boolean(value);
+            break;
           default:
             validated[key] = value;
         }
@@ -190,7 +196,9 @@ function getDefaultPreferences() {
     volume: 0.5,
     tutorialCompleted: false,
     showAdvancedControls: false,
-    beltOrder: ['pitch', 'degree', 'intervals', 'chromatic']
+    beltOrder: ['pitch', 'degree', 'intervals', 'chromatic'],
+    cursorColor: 'red',
+    cursorFill: false
   };
 }
 

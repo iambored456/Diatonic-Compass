@@ -61,10 +61,10 @@ export function checkCanvasSize(canvas, dimensions) {
     
     let newSize;
     if (isVerticalMode) {
-      // In vertical mode, we want the canvas to be as large as possible while staying square
-      // Since we're in a grid with auto auto columns, let's use more available space
-      const maxPossibleWidth = Math.max(containerWidth, viewportWidth * 0.4); // At least 40% of viewport
-      const maxPossibleHeight = Math.max(containerHeight, viewportHeight * 0.8); // At least 80% of viewport
+      // In vertical mode, use at least 80% of viewport width or 80% of viewport height
+      // Take whichever is smaller to ensure it fits
+      const maxPossibleWidth = Math.max(containerWidth, viewportWidth * 0.8);
+      const maxPossibleHeight = Math.max(containerHeight, viewportHeight * 0.8);
       newSize = Math.min(maxPossibleWidth, maxPossibleHeight);
     } else {
       // In horizontal mode: canvas needs to respect flex layout constraints

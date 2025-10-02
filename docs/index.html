@@ -22,7 +22,7 @@
 
 <title>Diatonic Compass - Interactive Music Theory Tool</title>
 
-<!-- Main stylesheets -->
+<!-- Main stylesheets -->
 
 <!-- Prevent flash of light content in dark mode -->
 <script>
@@ -71,8 +71,8 @@
     }
   }
 </style>
-  <script type="module" crossorigin src="./assets/index-I8egu1CP.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-By3ijTYu.css">
+  <script type="module" crossorigin src="./assets/index-BAzMYXM5.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-x2V06Mtf.css">
 </head>
 <body>
 
@@ -85,11 +85,13 @@
 </script>
 
 <!-- Settings button with enhanced accessibility -->
-<button id="settings-btn" 
-        aria-label="Open settings sidebar" 
-        aria-controls="sidebar" 
+<button id="settings-btn"
+        aria-label="Open settings sidebar"
+        aria-controls="sidebar"
         aria-expanded="false"
-        aria-describedby="settings-btn-help">⚙️</button>
+        aria-describedby="settings-btn-help">
+  <img src="./assets/Settings_optimized-VtilTiOD.svg" alt="" width="48" height="48">
+</button>
 <div id="settings-btn-help" class="sr-only">
   Opens a panel with display options, theme settings, and keyboard shortcuts
 </div>
@@ -152,7 +154,54 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- Cursor Color setting -->
+    <div class="sidebar-section">
+      <h3 class="sidebar-subheader">Cursor Colour</h3>
+      <div class="cursor-color-picker" role="radiogroup" aria-label="Select cursor color">
+        <button class="cursor-color-btn active"
+                data-color="red"
+                data-fill="false"
+                aria-label="Red outline"
+                role="radio"
+                aria-checked="true">
+          <div class="color-square red-outline"></div>
+        </button>
+        <button class="cursor-color-btn"
+                data-color="red"
+                data-fill="true"
+                aria-label="Red with fill"
+                role="radio"
+                aria-checked="false">
+          <div class="color-square red-fill"></div>
+        </button>
+        <button class="cursor-color-btn"
+                data-color="blue"
+                data-fill="true"
+                aria-label="Blue with fill"
+                role="radio"
+                aria-checked="false">
+          <div class="color-square blue-fill"></div>
+        </button>
+        <button class="cursor-color-btn"
+                data-color="green"
+                data-fill="true"
+                aria-label="Green with fill"
+                role="radio"
+                aria-checked="false">
+          <div class="color-square green-fill"></div>
+        </button>
+        <button class="cursor-color-btn"
+                data-color="yellow"
+                data-fill="true"
+                aria-label="Yellow with fill"
+                role="radio"
+                aria-checked="false">
+          <div class="color-square yellow-fill"></div>
+        </button>
+      </div>
+    </div>
+
     <!-- Component Order setting -->
     <div class="sidebar-section">
       <h3 class="sidebar-subheader">Component Order</h3>
@@ -275,13 +324,13 @@
   </section>
   
   <!-- Result display with enhanced accessibility -->
-  <section id="result-container" 
-           role="region" 
+  <section id="result-container"
+           role="region"
            aria-label="Current musical key and mode"
            aria-describedby="result-instructions"
            tabindex="0">
-    <div id="result-text" 
-         role="status" 
+    <div id="result-text"
+         role="status"
          aria-live="polite"
          aria-atomic="true"></div>
     <div id="result-instructions" class="sr-only">

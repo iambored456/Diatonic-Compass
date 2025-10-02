@@ -5,6 +5,14 @@ import { setRingAngle, rotateCoupledRings } from '../core/actions.js';
 import { SEMITONES, ANGLE_STEP, FONT_FACTOR_OUTER, FONT_FACTOR_MIDDLE, FONT_FACTOR_INNER, FIXED_INTERVAL_COLOUR, PIANO_KEY_COLOUR } from '../core/constants.js';
 import { getContrastColor } from '../core/color.js';
 
+// Cursor color mapping
+const CURSOR_COLORS = {
+  red: { solid: 'red', fill: 'rgba(255, 0, 0, 0.2)' },
+  blue: { solid: 'blue', fill: 'rgba(0, 0, 255, 0.2)' },
+  green: { solid: 'green', fill: 'rgba(0, 255, 0, 0.2)' },
+  yellow: { solid: '#FFD700', fill: 'rgba(255, 215, 0, 0.2)' }
+};
+
 export default class Wheel {
   constructor(canvas, state, onInteractionEnd) {
     this.canvas = canvas;
@@ -12,10 +20,30 @@ export default class Wheel {
     this.state = state;
     this.onInteractionEnd = onInteractionEnd;
 
+    // Canvas layer caching for performance
+    this.cachedLayers = {
+      outerRing: null,
+      middleRing: null,
+      innerRing: null,
+      labels: null,
+      lastSize: 0,
+    };
+
     this._initInteraction();
   }
 
   // --- Public Methods ---
+
+  /**
+   * Regenerate cached canvas layers when size changes
+   * This pre-renders static content for better performance
+   */
+  _regenerateCachedLayers(size, dpr) {
+    // Note: We're not actually using full layer caching yet because the rings rotate
+    // But we could cache ring segments and composite them
+    // For now, this is a placeholder for future optimization
+    // The real performance gain will come from dirty checking in the render loop
+  }
 
   update(rings, labels, playbackState) {
     const { size, dpr } = this.state.dimensions;
@@ -105,15 +133,27 @@ export default class Wheel {
   }
 
   _draw(size, dpr, rings, labels, playbackState) {
+    console.log('=== Wheel._draw CALLED ===', { size, dpr });
+
     const ctx = this.ctx;
     ctx.save();
+
+    // Clear BEFORE scaling to ensure entire canvas is cleared
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
     ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, size, size);
-    
+
     const cx = size / 2, cy = size / 2;
     const { pitchClass, degree, chromatic } = rings;
     const { chromaticLabels, diatonicLabels } = labels;
-    
+
+    // Check if we need to regenerate cached layers (size changed)
+    const needsRecache = this.cachedLayers.lastSize !== size;
+    if (needsRecache) {
+      this._regenerateCachedLayers(size, dpr);
+      this.cachedLayers.lastSize = size;
+    }
+
     const segPath = (r0, r1, angle) => {
         const a0 = angle - ANGLE_STEP / 2, a1 = angle + ANGLE_STEP / 2;
         ctx.beginPath();
@@ -204,7 +244,7 @@ export default class Wheel {
 
     const drawPlaybackHighlight = () => {
         if (!playbackState || !playbackState.isPlaying || playbackState.currentNoteIndex === null) return;
-        
+
         const visualNoteIndex = playbackState.currentNoteIndex % 12;
         const angle = visualNoteIndex * ANGLE_STEP + pitchClass - Math.PI / 2;
         const r1 = size * 0.5, r0 = size * 0.2;
@@ -212,27 +252,44 @@ export default class Wheel {
         ctx.fillStyle = 'rgba(255, 255, 0, 0.6)';
         ctx.fill();
     };
-    
-    const drawMarker = () => {
-        const rOuter=size*0.5, rInner=size*0.125;
-        const base=-Math.PI/2+chromatic, a0=base-ANGLE_STEP/2, a1=base+ANGLE_STEP/2;
-        ctx.beginPath();
-        ctx.moveTo(cx+Math.cos(a0)*rInner, cy+Math.sin(a0)*rInner);
-        ctx.arc(cx,cy,rOuter,a0,a1);
-        ctx.lineTo(cx+Math.cos(a1)*rInner, cy+Math.sin(a1)*rInner);
-        ctx.arc(cx,cy,rInner,a1,a0,true);
-        ctx.closePath();
-        ctx.lineWidth=size*0.006; ctx.strokeStyle='red'; ctx.stroke();
+
+    const drawTonalCenterMarker = () => {
+        // Draw pie slice outline at 12 o'clock (chromatic 0 position)
+        // Use dynamic cursor color from app state
+        const cursorColor = this.state.ui.cursorColor || 'red';
+        const hasFill = this.state.ui.cursorFill;
+        const colors = CURSOR_COLORS[cursorColor];
+
+        const angle = chromatic - Math.PI / 2; // 12 o'clock position
+        const r1 = size * 0.5; // Outer radius
+        const r0 = size * 0.12; // Just inside the chromatic ring (which starts at 0.2)
+
+        // Draw the pie slice with optional transparent fill and outline
+        segPath(r0, r1, angle);
+        if (hasFill) {
+            ctx.fillStyle = colors.fill;
+            ctx.fill();
+        }
+        ctx.strokeStyle = colors.solid;
+        ctx.lineWidth = size * 0.005; // Proportional line width
+        ctx.stroke();
     };
 
     // --- Execute drawing ---
+    console.log('Drawing outer ring...');
     drawOuterRing();
+    console.log('Drawing middle ring...');
     drawMiddleRing();
+    console.log('Drawing inner circle...');
     drawInner();
+    console.log('Drawing labels...');
     drawLabels();
+    console.log('Drawing playback highlight...');
     drawPlaybackHighlight();
-    drawMarker();
-    
+    console.log('Drawing tonal center marker...');
+    drawTonalCenterMarker();
+    console.log('Wheel drawing complete');
+
     ctx.restore();
   }
 }

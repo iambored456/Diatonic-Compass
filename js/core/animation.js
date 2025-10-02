@@ -6,18 +6,25 @@ import { appState } from '../state/appState.js';
 
 export function startSnap(targets, onComplete = null){
   const t0 = performance.now();
+
+  // If there's an ongoing animation, use its current target as the starting point
+  // for rings that aren't being animated in the new animation
+  const existingAnim = appState.animation;
+
   const from = {
     fromPitchClass: appState.rings.pitchClass,
     fromDegree:     appState.rings.degree,
     fromChrom:      appState.rings.chromatic,
     fromHighlight:  appState.rings.highlightPosition
   };
+
   const to = {
-    toPitchClass: targets.pitchClass ?? from.fromPitchClass,
-    toDegree:     targets.degree     ?? from.fromDegree,
-    toChrom:      targets.chromatic  ?? from.fromChrom,
-    toHighlight:  targets.highlightPosition ?? from.fromHighlight
+    toPitchClass: targets.pitchClass ?? (existingAnim?.to.toPitchClass ?? from.fromPitchClass),
+    toDegree:     targets.degree     ?? (existingAnim?.to.toDegree ?? from.fromDegree),
+    toChrom:      targets.chromatic  ?? (existingAnim?.to.toChrom ?? from.fromChrom),
+    toHighlight:  targets.highlightPosition ?? (existingAnim?.to.toHighlight ?? from.fromHighlight)
   };
+
   // LOG: Log the start of a snap animation.
   appState.animation = { t0, from, to, onComplete };
 }

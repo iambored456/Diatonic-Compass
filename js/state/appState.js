@@ -70,7 +70,9 @@ export const appState = {
   ui: {
     sidebarOpen: false,     // Whether settings sidebar is open
     darkMode: false,        // Dark mode toggle
-    
+    cursorColor: 'red',     // Cursor color ('red', 'blue', 'green', 'yellow')
+    cursorFill: false,      // Whether cursor has transparent fill
+
     // Future UI state can be added here
     display: {              // Reference to main display for consistency
       get sharp() { return appState.display.sharp; },
@@ -78,6 +80,14 @@ export const appState = {
       set sharp(value) { appState.display.sharp = value; },
       set flat(value) { appState.display.flat = value; },
     },
+  },
+
+  // === PERFORMANCE STATE ===
+  performance: {
+    needsRedraw: true,      // Flag to indicate if redraw is needed
+    lastRenderState: null,  // Last rendered state for comparison
+    frameSkipCounter: 0,    // Counter for adaptive frame skipping
+    isLowPowerMode: false,  // Auto-detected low power mode
   },
 };
 
@@ -122,6 +132,12 @@ export function getDefaultState() {
     ui: {
       sidebarOpen: false,
       darkMode: false,
+    },
+    performance: {
+      needsRedraw: true,
+      lastRenderState: null,
+      frameSkipCounter: 0,
+      isLowPowerMode: false,
     },
   };
 }
