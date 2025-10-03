@@ -9,6 +9,14 @@
 }
 .interval-brackets-wrapper {
   order: 3;
+  cursor: grab;
+  user-select: none;
+  background: transparent;
+  position: relative;
+}
+
+.interval-brackets-wrapper:active {
+  cursor: grabbing;
 }
 .chromatic-belt {
   order: 4;
@@ -261,6 +269,9 @@ body.dark-mode .order-item.group {
   overflow: hidden;
   position: relative;
   touch-action: none;
+  /* Add invisible background to make entire area draggable */
+  background: transparent;
+  cursor: inherit;
 }
 
 .interval-brackets-track {
@@ -280,6 +291,12 @@ body.dark-mode .order-item.group {
   padding: 0;
   position:relative;
   user-select: none;
+  pointer-events: none; /* Allow clicks to pass through to parent wrapper */
+}
+
+.interval-bracket-cell span,
+.interval-bracket-cell::after {
+  pointer-events: none; /* Ensure text and brackets don't block dragging */
 }
 
 /* Default Horizontal Interval Bracket */

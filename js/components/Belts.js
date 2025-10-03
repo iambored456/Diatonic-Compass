@@ -20,6 +20,7 @@ export default class Belts {
       chromaticNumbersTrack: container.querySelector('#chromatic-numbers-track'),
       intervalBracketsTrackContainer: container.querySelector('#intervalBracketsContainer'),
       intervalBracketsWrapper: container.querySelector('.interval-brackets-wrapper'),
+      intervalBrackets: null, // Will be set after track is created
       cursor: container.querySelector('#belt-cursor'),
       flashOverlay: container.querySelector('#belt-flash-overlay'),
     };
@@ -123,7 +124,7 @@ export default class Belts {
 
 
   _initInteraction() {
-    const { pitchBelt, degreeBelt, intervalBrackets, chromaticNumbersTrack } = this.elements;
+    const { pitchBelt, degreeBelt, chromaticNumbersTrack } = this.elements;
 
     if (pitchBelt) {
       this._addDragHandler(pitchBelt,
@@ -134,15 +135,18 @@ export default class Belts {
         () => snapRing('pitchClass', this.onInteractionEnd)
       );
     }
-    
+
     const degreeOnMove = (delta) => {
         const moveDelta = this.state.belts.orientation === 'vertical' ? -delta : delta;
         setRingAngle('degree', this.state.drag.startDegree + moveDelta);
         setRingAngle('highlightPosition', this.state.drag.startHighlight + moveDelta);
     };
-    const degreeOnFinish = () => snapDegreeToDiatonic(this.onInteractionEnd);
-    if (degreeBelt) this._addDragHandler(degreeBelt, degreeOnMove, degreeOnFinish);
-    if (intervalBrackets) this._addDragHandler(intervalBrackets, degreeOnMove, degreeOnFinish);
+    const degreeOnFinish = () => {
+        snapDegreeToDiatonic(this.onInteractionEnd);
+    };
+    if (degreeBelt) {
+        this._addDragHandler(degreeBelt, degreeOnMove, degreeOnFinish);
+    }
 
     if (chromaticNumbersTrack) {
       this._addDragHandler(chromaticNumbersTrack,
@@ -171,14 +175,14 @@ export default class Belts {
       element.setPointerCapture(activePointerId);
       startX = e.clientX;
       startY = e.clientY;
-      
+
       const { drag, rings } = this.state;
       drag.active = element.id || 'belt-drag';
       drag.startPitchClass = rings.pitchClass;
       drag.startDegree = rings.degree;
       drag.startChrom = rings.chromatic;
       drag.startHighlight = rings.highlightPosition;
-      
+
       element.style.cursor = 'grabbing';
     };
 
@@ -188,9 +192,10 @@ export default class Belts {
       const beltDragDistance = orientation === 'vertical' ? e.clientY - startY : e.clientX - startX;
       
       let beltSizeKey;
-      if (element.id.includes('pitch')) beltSizeKey = 'pitchBelt';
-      else if (element.id.includes('degree') || element.id.includes('interval')) beltSizeKey = 'degreeBelt';
-      else if (element.id.includes('chromatic')) beltSizeKey = 'chromaticBelt';
+      const elementIdentifier = element.id || element.className || '';
+      if (elementIdentifier.includes('pitch')) beltSizeKey = 'pitchBelt';
+      else if (elementIdentifier.includes('degree') || elementIdentifier.includes('interval')) beltSizeKey = 'degreeBelt';
+      else if (elementIdentifier.includes('chromatic')) beltSizeKey = 'chromaticBelt';
       
       const beltCellWidth = itemSize[beltSizeKey];
       if (!beltCellWidth || beltCellWidth === 0) return;
@@ -270,6 +275,20 @@ export default class Belts {
         track.appendChild(cell);
     }
     this.elements.intervalBracketsTrackContainer.appendChild(track);
+
+    // Store reference to the wrapper for drag handling
+    this.elements.intervalBrackets = this.elements.intervalBracketsWrapper;
+
+    // Attach drag handler to interval belt (same behavior as diatonic belt)
+    const degreeOnMove = (delta) => {
+        const moveDelta = this.state.belts.orientation === 'vertical' ? -delta : delta;
+        setRingAngle('degree', this.state.drag.startDegree + moveDelta);
+        setRingAngle('highlightPosition', this.state.drag.startHighlight + moveDelta);
+    };
+    const degreeOnFinish = () => {
+        snapDegreeToDiatonic(this.onInteractionEnd);
+    };
+    this._addDragHandler(this.elements.intervalBrackets, degreeOnMove, degreeOnFinish);
   }
 
   _calculateAllBeltCellWidths(orientation) {
