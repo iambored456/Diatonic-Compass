@@ -43,7 +43,7 @@
   border: 1px solid #ddd;
   border-radius: var(--radius-small);
   background: #f8f8f8;
-  cursor: grab;
+  cursor: default; /* Not draggable from the item itself */
   user-select: none;
   transition: all 0.2s ease;
 }
@@ -57,7 +57,7 @@
   border: 1px solid #ddd;
   border-radius: var(--radius-small);
   background: #f8f8f8;
-  cursor: grab;
+  cursor: default; /* Not draggable from the item itself */
   user-select: none;
   transition: all 0.2s ease;
 }
@@ -111,10 +111,29 @@
 .drag-handle,
 .belt-drag-handle {
   color: #666;
-  font-size: 1rem;
+  font-size: 1.5rem;
   line-height: 1;
   cursor: grab;
-  padding: 0.25rem;
+  padding: 0.5rem;
+  min-width: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none; /* Prevent scrolling when touching the handle */
+  -webkit-user-select: none;
+  user-select: none;
+  border-radius: var(--radius-small);
+  transition: background-color 0.2s;
+}
+
+.drag-handle:hover,
+.belt-drag-handle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.drag-handle:active,
+.belt-drag-handle:active {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .order-item:active .drag-handle,
@@ -168,6 +187,31 @@ body.dark-mode .order-item.nested {
 body.dark-mode .order-item.group {
   background: #2a4a5a;
   border-color: #33c6dc;
+}
+
+body.dark-mode .drag-handle,
+body.dark-mode .belt-drag-handle {
+  color: #bbb;
+}
+
+body.dark-mode .drag-handle:hover,
+body.dark-mode .belt-drag-handle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .drag-handle:active,
+body.dark-mode .belt-drag-handle:active {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Drag ghost styling */
+.drag-ghost {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  cursor: grabbing !important;
+}
+
+body.dark-mode .drag-ghost {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
 }
 
 .belts-container {
@@ -246,7 +290,7 @@ body.dark-mode .order-item.group {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.5rem, 1.35rem, 8rem);
+  font-size: clamp(0.75rem, 6vw, 1.35rem);
   border-right: var(--border-width) solid #ccc;
   user-select: none;
   line-height: 1.1;
@@ -287,7 +331,7 @@ body.dark-mode .order-item.group {
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  font-size: clamp(1rem, 1.3rem, 2rem);
+  font-size: clamp(0.75rem, 1.5vw, 1.3rem);
   padding: 0;
   position:relative;
   user-select: none;
@@ -367,6 +411,8 @@ body.dark-mode .order-item.group {
 .main-container.vertical-layout .belt-cell {
   border-right: none;
   border-top: var(--border-width) solid #ccc;
+  white-space: nowrap; /* Prevent text wrapping in vertical mode */
+  font-size: clamp(0.6rem, 2.3vw, 1.2rem); /* Increased font size for vertical mode side-by-side labels */
 }
 
 .main-container.vertical-layout .belt-cell:first-child {

@@ -10,7 +10,14 @@ export default class OrderManager {
     this.draggedItem = null;
     this.dragOverItem = null;
     this.onOrderChange = null;
-    
+
+    // Touch support
+    this.touchStartY = 0;
+    this.touchStartX = 0;
+    this.isDraggingTouch = false;
+    this.touchScrollThreshold = 10; // pixels before considering it a drag
+    this.dragGhost = null; // Visual element that follows touch/mouse
+
     this.init();
   }
 
@@ -33,29 +40,44 @@ export default class OrderManager {
   }
 
   _setupEventListeners() {
+    // Mouse/desktop drag events
     this.container.addEventListener('dragstart', this._handleDragStart.bind(this));
     this.container.addEventListener('dragover', this._handleDragOver.bind(this));
     this.container.addEventListener('dragenter', this._handleDragEnter.bind(this));
     this.container.addEventListener('dragleave', this._handleDragLeave.bind(this));
     this.container.addEventListener('drop', this._handleDrop.bind(this));
     this.container.addEventListener('dragend', this._handleDragEnd.bind(this));
+
+    // Touch events for mobile
+    this.container.addEventListener('touchstart', this._handleTouchStart.bind(this), { passive: false });
+    this.container.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
+    this.container.addEventListener('touchend', this._handleTouchEnd.bind(this), { passive: false });
+    this.container.addEventListener('touchcancel', this._handleTouchEnd.bind(this), { passive: false });
   }
 
   _handleDragStart(event) {
     console.log('Drag start event triggered', event.target);
-    if (!event.target.classList.contains('order-item')) {
-      console.log('Not an order-item, ignoring');
+
+    // Check if drag started from the drag handle
+    if (!event.target.classList.contains('drag-handle')) {
+      console.log('Not a drag-handle, ignoring');
       return;
     }
-    
-    this.draggedItem = event.target;
+
+    // Get the parent order-item
+    this.draggedItem = event.target.closest('.order-item');
+    if (!this.draggedItem) {
+      console.log('No parent order-item found, ignoring');
+      return;
+    }
+
     this.draggedItem.classList.add('dragging');
     console.log('Dragging item:', this.draggedItem.dataset.component);
-    
+
     // Set drag data
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/html', this.draggedItem.outerHTML);
-    
+
     // Hide the original item after a brief delay (to allow drag ghost to be created)
     setTimeout(() => {
       if (this.draggedItem) {
@@ -152,18 +174,18 @@ export default class OrderManager {
     
     // Remove dragged item and insert at target position
     currentOrder.splice(draggedIndex, 1);
-    // When dropping onto an item, we want to place the dragged item AFTER the target
-    // This fixes the "two drags for one move" issue
-    const newTargetIndex = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
-    
+    // After removing the dragged item, adjust target index if needed
+    // If we're moving forward (to a higher index), the target index shifts down by 1
+    const adjustedTargetIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+
     console.log('Horizontal reorder calculation:', {
       afterRemoval: [...currentOrder],
-      newTargetIndex,
-      calculation: `${draggedIndex} < ${targetIndex} ? ${targetIndex} : ${targetIndex + 1}`,
-      explanation: draggedIndex < targetIndex ? 'Moving forward: place after target' : 'Moving backward: place after target'
+      adjustedTargetIndex,
+      calculation: `${draggedIndex} < ${targetIndex} ? ${targetIndex - 1} : ${targetIndex}`,
+      explanation: draggedIndex < targetIndex ? 'Moving forward: target shifted down after removal' : 'Moving backward: target index unchanged'
     });
-    
-    currentOrder.splice(newTargetIndex, 0, draggedId);
+
+    currentOrder.splice(adjustedTargetIndex, 0, draggedId);
     
     console.log('Final horizontal order:', [...currentOrder]);
     appState.belts.layoutOrder.horizontal = currentOrder;
@@ -205,18 +227,18 @@ export default class OrderManager {
         currentOrder.splice(draggedIndex, 1);
         
         // Special case: when compass is dragged onto a belt, it should go AFTER result group
-        let newTargetIndex;
+        let adjustedTargetIndex;
         if (actualDraggedId === 'compass' && beltIds.includes(targetId)) {
           // Place compass after the result group (at the end)
-          newTargetIndex = currentOrder.length;
-          console.log('Placing compass after result group at index:', newTargetIndex);
+          adjustedTargetIndex = currentOrder.length;
+          console.log('Placing compass after result group at index:', adjustedTargetIndex);
         } else {
-          // Normal reorder logic - Fixed to prevent "two drags for one move"
-          newTargetIndex = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
-          console.log('Normal reorder to index:', newTargetIndex);
+          // Normal reorder logic - adjust for the removed item
+          adjustedTargetIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+          console.log('Normal reorder to index:', adjustedTargetIndex);
         }
-        
-        currentOrder.splice(newTargetIndex, 0, actualDraggedId);
+
+        currentOrder.splice(adjustedTargetIndex, 0, actualDraggedId);
         appState.belts.layoutOrder.vertical = currentOrder;
         console.log('New vertical layout order:', currentOrder);
       } else {
@@ -246,17 +268,17 @@ export default class OrderManager {
     
     // Remove dragged item and insert at target position
     currentOrder.splice(draggedIndex, 1);
-    // Fix: Use the same logic as horizontal layout to prevent "two drags for one move"
-    const newTargetIndex = draggedIndex < targetIndex ? targetIndex : targetIndex + 1;
-    
+    // After removing the dragged item, adjust target index if needed
+    const adjustedTargetIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+
     console.log('Belt reorder calculation:', {
       afterRemoval: [...currentOrder],
-      newTargetIndex,
-      calculation: `${draggedIndex} < ${targetIndex} ? ${targetIndex} : ${targetIndex + 1}`,
-      explanation: draggedIndex < targetIndex ? 'Moving forward: place after target' : 'Moving backward: place after target'
+      adjustedTargetIndex,
+      calculation: `${draggedIndex} < ${targetIndex} ? ${targetIndex - 1} : ${targetIndex}`,
+      explanation: draggedIndex < targetIndex ? 'Moving forward: target shifted down after removal' : 'Moving backward: target index unchanged'
     });
-    
-    currentOrder.splice(newTargetIndex, 0, draggedBelt);
+
+    currentOrder.splice(adjustedTargetIndex, 0, draggedBelt);
     
     console.log('Final belt order:', [...currentOrder]);
     appState.belts.order = currentOrder;
@@ -322,27 +344,28 @@ export default class OrderManager {
   _createOrderItem(componentId, label, isGroup = false, isNested = false) {
     const item = document.createElement('div');
     item.className = `order-item${isGroup ? ' group' : ''}${isNested ? ' nested' : ''}`;
-    item.draggable = true;
+    item.draggable = false; // Don't make the entire item draggable
     item.dataset.component = componentId;
-    
+
     const dragHandle = document.createElement('span');
     dragHandle.className = 'drag-handle';
     dragHandle.textContent = '⋮⋮';
-    
+    dragHandle.draggable = true; // Only the handle is draggable
+
     const labelSpan = document.createElement('span');
     labelSpan.className = 'component-label';
     labelSpan.textContent = label;
-    
+
     if (isNested) {
       const indent = document.createElement('span');
       indent.className = 'nested-indent';
       indent.textContent = '  ';
       item.appendChild(indent);
     }
-    
+
     item.appendChild(dragHandle);
     item.appendChild(labelSpan);
-    
+
     return item;
   }
 
@@ -449,6 +472,143 @@ export default class OrderManager {
       item.style.transform = '';
       item.style.transition = '';
     });
+  }
+
+  // Create a visual ghost element that follows the drag
+  _createDragGhost(sourceElement, x, y) {
+    const ghost = sourceElement.cloneNode(true);
+    ghost.classList.add('drag-ghost');
+    ghost.style.position = 'fixed';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.zIndex = '9999';
+    ghost.style.opacity = '0.8';
+    ghost.style.width = sourceElement.offsetWidth + 'px';
+    ghost.style.left = x - (sourceElement.offsetWidth / 2) + 'px';
+    ghost.style.top = y - (sourceElement.offsetHeight / 2) + 'px';
+    ghost.style.transform = 'rotate(-2deg)';
+    ghost.style.transition = 'none';
+    document.body.appendChild(ghost);
+    return ghost;
+  }
+
+  _updateDragGhost(x, y) {
+    if (this.dragGhost) {
+      this.dragGhost.style.left = x - (this.dragGhost.offsetWidth / 2) + 'px';
+      this.dragGhost.style.top = y - (this.dragGhost.offsetHeight / 2) + 'px';
+    }
+  }
+
+  _removeDragGhost() {
+    if (this.dragGhost) {
+      this.dragGhost.remove();
+      this.dragGhost = null;
+    }
+  }
+
+  // Touch event handlers for mobile support
+  _handleTouchStart(event) {
+    const target = event.target;
+
+    // Only handle touches on drag handles
+    if (!target.classList.contains('drag-handle')) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    this.touchStartY = touch.clientY;
+    this.touchStartX = touch.clientX;
+    this.isDraggingTouch = false;
+
+    // Get the parent order-item
+    this.draggedItem = target.closest('.order-item');
+    if (!this.draggedItem) {
+      return;
+    }
+
+    console.log('Touch start on drag handle:', this.draggedItem.dataset.component);
+  }
+
+  _handleTouchMove(event) {
+    if (!this.draggedItem) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaY = Math.abs(touch.clientY - this.touchStartY);
+    const deltaX = Math.abs(touch.clientX - this.touchStartX);
+
+    // If movement exceeds threshold, start dragging
+    if (!this.isDraggingTouch && (deltaY > this.touchScrollThreshold || deltaX > this.touchScrollThreshold)) {
+      this.isDraggingTouch = true;
+      this.draggedItem.classList.add('dragging');
+      event.preventDefault(); // Prevent scrolling while dragging
+
+      // Create drag ghost
+      this.dragGhost = this._createDragGhost(this.draggedItem, touch.clientX, touch.clientY);
+      console.log('Started touch dragging');
+    }
+
+    if (this.isDraggingTouch) {
+      event.preventDefault();
+
+      // Update ghost position
+      this._updateDragGhost(touch.clientX, touch.clientY);
+
+      // Find element under touch point
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      const targetItem = elementBelow?.closest('.order-item');
+
+      // Update drag-over state
+      if (targetItem && targetItem !== this.draggedItem) {
+        // Remove previous drag-over
+        if (this.dragOverItem && this.dragOverItem !== targetItem) {
+          this.dragOverItem.classList.remove('drag-over');
+        }
+
+        this.dragOverItem = targetItem;
+        targetItem.classList.add('drag-over');
+        this._animateReorder(targetItem);
+      }
+    }
+  }
+
+  _handleTouchEnd(event) {
+    if (!this.draggedItem) {
+      return;
+    }
+
+    if (this.isDraggingTouch) {
+      event.preventDefault();
+      console.log('Touch drag ended');
+
+      // Perform the drop
+      if (this.dragOverItem && this.dragOverItem !== this.draggedItem) {
+        const draggedId = this.draggedItem.dataset.component;
+        const targetId = this.dragOverItem.dataset.component;
+        console.log(`Touch dropping ${draggedId} onto ${targetId}`);
+
+        this._reorderComponents(draggedId, targetId);
+        this._saveOrder();
+        this._updateDisplay();
+        this._applyComponentOrder();
+      }
+
+      // Remove drag ghost
+      this._removeDragGhost();
+    }
+
+    // Clean up
+    if (this.draggedItem) {
+      this.draggedItem.classList.remove('dragging');
+    }
+    if (this.dragOverItem) {
+      this.dragOverItem.classList.remove('drag-over');
+    }
+    this._resetAnimations();
+
+    this.draggedItem = null;
+    this.dragOverItem = null;
+    this.isDraggingTouch = false;
   }
 
   destroy() {

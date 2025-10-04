@@ -54,12 +54,13 @@ function applyAccidentalPreference(label, sharp, flat) {
     }
 
     // Return based on settings
-    if (sharp && flat) return `${sharpName}<br>${flatName}`;
+    // Keep slash separator - it will be replaced with <br> or space by belt rendering logic
+    if (sharp && flat) return `${sharpName}/${flatName}`;
     if (sharp) return sharpName;
     if (flat) return flatName;
 
     // Fallback (should not happen due to UI constraints)
-    return `${sharpName}<br>${flatName}`;
+    return `${sharpName}/${flatName}`;
     
   } catch (error) {
     ErrorHandler.handle(error, 'Logic', () => {

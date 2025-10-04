@@ -208,8 +208,10 @@ export default class Wheel {
             const x = cx + Math.cos(angle) * radius;
             const y = cy + Math.sin(angle) * radius;
 
-            if (String(text).includes('<br>')) {
-                const lines = text.split('<br>');
+            // Handle multi-line labels (separated by / or <br>)
+            const textStr = String(text);
+            if (textStr.includes('/') || textStr.includes('<br>')) {
+                const lines = textStr.includes('/') ? textStr.split('/') : textStr.split('<br>');
                 const lineHeight = fontSize * 1.1;
                 const startY = y - (lineHeight * (lines.length - 1)) / 2;
 

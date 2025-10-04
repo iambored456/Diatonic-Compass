@@ -58,6 +58,41 @@ export default class Belts {
     return (CHROMATIC_DIVISIONS * beltCellWidth) / TAU;
   }
 
+  // --- Helper Methods ---
+
+  /**
+   * Format a label based on cell dimensions
+   * If cell is wider than tall, display alternatives side-by-side
+   * Otherwise, display them stacked (default)
+   */
+  _formatLabelForCell(label, cell) {
+    if (!label || !label.includes('/')) {
+      return label;
+    }
+
+    const orientation = this.state.belts.orientation;
+
+    // Debug: Log first occurrence of each belt type
+    const beltType = cell.closest('.belt')?.className || 'unknown';
+    if (cell.dataset.originalIndex === '1') {
+      console.log(`🔍 Format check [${beltType}] (${orientation}):`, {
+        label,
+        orientation,
+        decision: orientation === 'vertical' ? 'SIDE-BY-SIDE (vertical mode)' : 'STACKED (horizontal mode)'
+      });
+    }
+
+    // In vertical orientation mode, cells are wider - use side-by-side
+    // In horizontal orientation mode, cells are taller - use stacked
+    if (orientation === 'vertical') {
+      // Replace slash with space for side-by-side display
+      return label.replace('/', ' ');
+    } else {
+      // Default: replace slash with line break for stacked display
+      return label.replace('/', '<br>');
+    }
+  }
+
   // --- Public API ---
 
   update(labels, highlightPattern) {
@@ -348,7 +383,7 @@ export default class Belts {
       chromaticColorCount: this.cachedCells.chromaticColors?.length || 0
     });
 
-    // Update pitch belt if labels changed OR first run OR cells just became available
+    // Update pitch belt - always update labels to handle dimension changes
     const shouldUpdatePitch = (labelsChanged || isFirstRun) && this.cachedCells.pitch;
     const needsInitialColors = this.cachedCells.pitch && this.cachedCells.pitch.length > 0 && !this.cachedCells.pitch[0].style.background;
 
@@ -360,7 +395,14 @@ export default class Belts {
         const isWhiteKey = PIANO_KEY_COLOUR[note];
         cell.style.background = isWhiteKey ? '#fff' : '#000';
         cell.style.color = isWhiteKey ? '#000' : '#fff';
-        cell.innerHTML = chromaticLabels[idx];
+        cell.innerHTML = this._formatLabelForCell(chromaticLabels[idx], cell);
+      });
+    } else if (this.cachedCells.pitch && labelsChanged) {
+      // Update labels even if colors don't need updating
+      console.log('UPDATING PITCH LABELS ONLY');
+      this.cachedCells.pitch.forEach(cell => {
+        const idx = +cell.dataset.originalIndex;
+        cell.innerHTML = this._formatLabelForCell(chromaticLabels[idx], cell);
       });
     } else {
       console.log('SKIPPED pitch belt colors:', { shouldUpdatePitch, needsInitialColors, hasCells: !!this.cachedCells.pitch });
@@ -377,7 +419,14 @@ export default class Belts {
         const bgColor = FIXED_INTERVAL_COLOUR[idx] || '#f0f0f0';
         cell.style.background = bgColor;
         cell.style.color = getContrastColor(bgColor);
-        cell.innerHTML = diatonicLabels[idx];
+        cell.innerHTML = this._formatLabelForCell(diatonicLabels[idx], cell);
+      });
+    } else if (this.cachedCells.degree && labelsChanged) {
+      // Update labels even if colors don't need updating
+      console.log('UPDATING DEGREE LABELS ONLY');
+      this.cachedCells.degree.forEach(cell => {
+        const idx = +cell.dataset.originalIndex;
+        cell.innerHTML = this._formatLabelForCell(diatonicLabels[idx], cell);
       });
     } else {
       console.log('SKIPPED degree belt colors:', { shouldUpdateDegree, needsInitialDegreeColors, hasCells: !!this.cachedCells.degree });

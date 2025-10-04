@@ -309,6 +309,35 @@ body.dark-mode #settings-btn img {
   max-height: 100vh;
 }
 
+/* Enhanced scrollbar for touch devices */
+.sidebar-content::-webkit-scrollbar {
+  width: 12px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar */
+.sidebar-content {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+}
+
 #sidebar-title {
   font-size: 1.5rem;
   font-weight: bold;
@@ -661,6 +690,23 @@ body.dark-mode .sidebar-credit {
 
 body.dark-mode .sidebar-credit small {
   color: #999;
+}
+
+/* Dark mode scrollbar */
+body.dark-mode .sidebar-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+body.dark-mode .sidebar-content {
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
 }
 
 /* Keyboard key styling */
