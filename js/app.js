@@ -817,17 +817,17 @@ Focus the wheel or belts first, then use arrow keys to rotate rings.
       // Step animations first (always runs, may update state)
       const wasAnimating = stepAnim(time);
 
-      // PERFORMANCE: Skip rendering if state hasn't changed and not in low power mode
-      if (!this.state.performance.isLowPowerMode && !StateTracker.needsRedraw(this.state)) {
-        return;
-      }
-
       // Check and update canvas size with error handling
       const canvasResized = checkCanvasSize(this.elements.canvas, this.state.dimensions);
 
-      // If canvas was resized, mark dirty
+      // If canvas was resized, mark dirty so we redraw
       if (canvasResized) {
         StateTracker.markDirty(this.state);
+      }
+
+      // PERFORMANCE: Skip rendering if state hasn't changed and not in low power mode
+      if (!this.state.performance.isLowPowerMode && !StateTracker.needsRedraw(this.state)) {
+        return;
       }
 
       // Skip render if no valid canvas size

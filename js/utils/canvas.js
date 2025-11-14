@@ -59,6 +59,7 @@ export function checkCanvasSize(canvas, dimensions) {
       element = element.parentElement;
     }
     
+    const currentDpr = getDevicePixelRatio();
     let newSize;
     if (isVerticalMode) {
       // In vertical mode, use at least 80% of viewport width or 80% of viewport height
@@ -73,7 +74,12 @@ export function checkCanvasSize(canvas, dimensions) {
       newSize = Math.min(availableSpace, window.innerHeight * 0.8); // Cap at 80% of viewport height
     }
 
-    if (Math.abs(newSize - (dimensions.size || 0)) > 50) { // Only log on significant changes
+    const currentSize = dimensions.size || 0;
+    const sizeDelta = Math.abs(newSize - currentSize);
+    const sizeChanged = currentSize === 0 || sizeDelta >= 2;
+    const dprChanged = dimensions.dpr !== currentDpr;
+
+    if (sizeDelta > 50) { // Only log on significant changes
       console.log('=== CANVAS CONTAINER DEBUG ===');
       console.log('Vertical mode:', isVerticalMode);
       console.log('Canvas size:', { width: canvas.width, height: canvas.height });
@@ -88,41 +94,34 @@ export function checkCanvasSize(canvas, dimensions) {
         });
       });
     }
-
-    // Return false if size is 0 or unchanged - exactly like original  
-    if (newSize === dimensions.size || newSize === 0) {
-      return false;
-    }
     
-    // Skip very small size changes to prevent flickering
-    if (dimensions.size && Math.abs(newSize - dimensions.size) < 2) {
+    // Skip if we have no meaningful change
+    if (newSize === 0 || (!sizeChanged && !dprChanged)) {
       return false;
     }
     
     console.log('Canvas resize proceeding:', {
       oldSize: dimensions.size,
       newSize: newSize,
-      difference: Math.abs(newSize - (dimensions.size || 0))
+      sizeChanged,
+      dprChanged,
+      difference: sizeDelta
     });
 
-    // Update dimensions - exactly like original
+    // Update dimensions
     dimensions.size = newSize;
     dimensions.cx = newSize / 2;
     dimensions.cy = newSize / 2;
-    
-    // Set device pixel ratio if not already set
-    if (!dimensions.dpr || dimensions.dpr === 0) {
-      dimensions.dpr = getDevicePixelRatio();
-    }
+    dimensions.dpr = currentDpr;
 
-    // Adjust canvas buffer size for device pixel ratio - exactly like original
-    const newBufferWidth = newSize * dimensions.dpr;
-    const newBufferHeight = newSize * dimensions.dpr;
+    // Adjust canvas buffer size for device pixel ratio
+    const newBufferWidth = newSize * currentDpr;
+    const newBufferHeight = newSize * currentDpr;
     
     console.log('Setting canvas dimensions:', {
       cssSize: `${newSize}px`,
       bufferSize: `${newBufferWidth}x${newBufferHeight}`,
-      dpr: dimensions.dpr,
+      dpr: currentDpr,
       beforeCSS: { width: canvas.style.width, height: canvas.style.height },
       beforeBuffer: { width: canvas.width, height: canvas.height }
     });
